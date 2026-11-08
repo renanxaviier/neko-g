@@ -2,7 +2,7 @@
 // Unidades: pixels de mundo e segundos. 1 tile = 32 px.
 
 export const TILE = 32;
-export const VERSION = '0.23 teste';   // aparece na tela inicial e no feedback dos testadores
+export const VERSION = '0.24 teste';   // aparece na tela inicial e no feedback dos testadores
 export const VIEW_W = 410;          // largura visível do mundo (retrato; era 380 até a v0.17); a altura se adapta à tela
 export const CHUNK_W = 24;          // largura de um chunk em tiles
 export const CHUNK_H = 16;          // altura de um chunk em tiles (abaixo disso é chão sólido)
@@ -43,12 +43,17 @@ export const WATER = {
 // Modo Jornada (GDD 3.5): mapas gerados em sequência, cada um com fases + chefe
 export const JOURNEY = {
   stagesPerMap: 4,                       // fases antes do chefe
-  stageDiff: 0.25,                       // cada fase soma isto à dificuldade do mapa (n do Spawner)
+  stageDiff: 0.3,                        // cada fase soma isto à dificuldade do mapa (n do Spawner)
+  // v0.24 Dificuldade progressiva entre mapas (pedido do produtor): cada mapa pesa mais que antes
+  //  n do mapa = índice × mapStep (era ×1) → mais inimigos ao mesmo tempo e grupos mais frequentes;
+  //  e por mapa, além disso: +hp de vida e +dmg de dano dos inimigos (linear).
+  //  Veteranos: a partir do mapa veteranFrom+1, às vezes um inimigo da horda vem com aura dourada (vida ×veteranHp, recompensa de elite).
+  ramp: { mapStep: 1.3, hp: 0.05, dmg: 0.05, veteranFrom: 2, veteran: 0.04, veteranPerMap: 0.012, veteranMax: 0.12, veteranHp: 2.5 },
   survive: { base: 60, perStage: 10 },   // segundos
   hunt: { base: 32, perStage: 9, perMap: 0.06, max: 90 },   // abates
   reach: { base: 2800, perStage: 450 },  // distância até a saída (px de mundo; 32 px = 1 m)
   bossDelay: 5,                          // segundos até o chefe surgir na fase final
-  bossHpPerMap: 0.12, bossHpPerCycle: 0.6,
+  bossHpPerMap: 0.18, bossHpPerCycle: 0.6,   // v0.24: 0.12 → 0.18 (dificuldade progressiva)
   clearScrap: { base: 30, perMap: 8 },   // bônus de Sucata ao vencer o mapa
   clearCoins: 5,                         // Cyber-Moedas na 1ª vitória de cada mapa
   replayMult: 0.5,                       // mapa já vencido: metade do bônus

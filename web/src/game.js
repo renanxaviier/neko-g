@@ -309,10 +309,11 @@ export class Game {
     this.stageKills0 = this.kills; this.stageX0 = this.player.cx;
     this.stageBat0 = this.batteries; this.stageElite0 = this.elitesKilled; this.eliteT = JOURNEY.elite.first;
     if (this.tal) this.shield = this.tal.shield;
-    const n = this.map.n + s * JOURNEY.stageDiff, M = this.mod;
-    this.diffN = n;
-    this.sectorMult = (1 + 0.12 * n) * (M.hp || 1);
-    this.enemyDamageMult = (1 + 0.04 * n) * (M.dmg || 1);
+    const R = JOURNEY.ramp, m = this.map.n, M = this.mod;
+    const n = m * R.mapStep + s * JOURNEY.stageDiff;
+    this.diffN = n; this.rampHp = 1 + R.hp * m;
+    this.sectorMult = (1 + 0.12 * n) * this.rampHp * (M.hp || 1);
+    this.enemyDamageMult = (1 + 0.04 * n) * (1 + R.dmg * m) * (M.dmg || 1);
     this.sectorBossAt = st.type === 'boss' ? JOURNEY.bossDelay : Infinity;
     if (st.type === 'reach') this._placeExit(st.goal);
     if (this.ui) this.ui.showStage(this.map, s, st, last);
@@ -374,8 +375,8 @@ export class Game {
     const ex = this.adaptEx = Math.max(0, Math.min(A.cap, this.level - expected));
     this.adaptHp = 1 + A.hp * ex;
     this.adaptAlive = Math.min(A.aliveMax, 1 + A.alive * ex);
-    const n = this.map.n + this.stage * JOURNEY.stageDiff;
-    this.enemyDamageMult = (1 + 0.04 * n) * (M.dmg || 1) * (1 + A.dmg * ex);
+    const R = JOURNEY.ramp, m = this.map.n, n = m * R.mapStep + this.stage * JOURNEY.stageDiff;
+    this.enemyDamageMult = (1 + 0.04 * n) * (1 + R.dmg * m) * (M.dmg || 1) * (1 + A.dmg * ex);
   }
 
   // Expedição: depois de vencer um mapa, segue para o próximo com o mesmo nível, skills e vida (+35%).

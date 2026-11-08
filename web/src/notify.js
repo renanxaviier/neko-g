@@ -9,6 +9,8 @@ import { pointsLeft } from './talents.js';
 
 // Novidades da versão atual (aparece uma vez por versão)
 export const CHANGELOG = [
+  'Jornada mais desafiadora a cada mapa: hordas maiores, inimigos mais fortes e veteranos dourados',
+  'Atualização pelo próprio app para testadores (aviso de versão nova)',
   'Contagem 3-2-1 no início de cada fase: tudo carrega antes de você se mexer',
   'Contas na nuvem ligadas: progresso salvo, login com Google/e-mail e ranking global',
   'Glitch de dano mais leve em celulares simples',

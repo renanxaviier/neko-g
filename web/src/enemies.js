@@ -782,6 +782,19 @@ export class Spawner {
     const alive = Math.min(80, Math.round((6 + 2.2 * L.n + L.p * (8 + 1.4 * L.n)) * (M.alive || 1) * (g.mode === 'journey' ? g.adaptAlive || 1 : 1)));   // setor 1: 6 → 14 · setor 6: 17 → 32
     if (g.enemies.count >= alive * (g.boss ? 0.5 : 1)) return;                // com chefe em campo, metade da horda
     this._spawnGroup(L);
+    this._veteran();
+  }
+
+  // Jornada, mapas avançados: às vezes um inimigo "veterano" (aura dourada, mais vida, recompensa de elite) no meio da horda
+  _veteran() {
+    const g = this.game, R = JOURNEY.ramp;
+    if (g.mode !== 'journey' || !g.map || g.map.n < R.veteranFrom || g.boss) return;
+    const st = g.stageInfo;
+    if (!st || st.type === 'elite' || st.type === 'boss') return;
+    const chance = Math.min(R.veteranMax, R.veteran + R.veteranPerMap * (g.map.n - R.veteranFrom));
+    if (!g.rng.chance(chance)) return;
+    for (const e of g.enemies.pool) if (e.active && e.elite) return;          // um por vez
+    this.spawnElite({ quiet: true, hp: R.veteranHp });
   }
 
   // Caixas destrutíveis aparecem no chão, fora da tela (12% de chance de ser a especial)
@@ -844,13 +857,13 @@ export class Spawner {
   }
 
   // Jornada, fase "Caçada de elite": um inimigo médio/tanque do cenário com muito mais vida, aura dourada e seta
-  spawnElite() {
+  spawnElite(opt = {}) {
     const g = this.game, rng = g.rng, p = g.player, view = g.camera.view, L = this.level();
     const R = SECTOR_ROSTER[biomeAt(Math.floor(p.cx / (TILE * CHUNK_W))).id] || SECTOR_ROSTER.distrito;
     const pool = [...(R.medium || []), ...(R.tank || [])].map((o) => o[0]).filter((id) => ENEMY_TYPES[id] && !ENEMY_TYPES[id].boss);
     if (!pool.length) return null;
     const typeId = pool[rng.int(0, pool.length)], def = ENEMY_TYPES[typeId];
-    const hpMult = (1 + 0.1 * L.n) * (1 + 0.6 * L.cyc) * JOURNEY.elite.hp * ((g.mod && g.mod.hp) || 1);
+    const hpMult = (1 + 0.1 * L.n) * (1 + 0.6 * L.cyc) * (opt.hp || JOURNEY.elite.hp) * ((g.mod && g.mod.hp) || 1) * (g.rampHp || 1);
     let e = null;
     for (const s of [p.input.moveDir || 1, -(p.input.moveDir || 1)]) {
       const x = s > 0 ? view.right + 40 : view.left - 40;
@@ -860,6 +873,7 @@ export class Spawner {
     }
     if (!e) return null;
     e.elite = true;
+    if (opt.quiet) return e;                                                   // veterano da horda: sem aviso
     if (g.ui) g.ui.showBiome({ name: `${def.name.toUpperCase()} ELITE`, color: '#ffd84d' }, '★ ALVO DA CAÇADA ★', true);
     g.audio.sfx('alarm');
     return e;
@@ -875,7 +889,7 @@ export class Spawner {
     const ahead = p.input.moveDir || (rng.chance(0.5) ? 1 : -1);
     const side = rng.chance(0.6) ? ahead : -ahead;
     const fromTop = def.flying && rng.chance(0.3);
-    const hpMult = (1 + 0.1 * L.n) * (1 + 0.3 * L.p) * (1 + 0.6 * L.cyc) * ((g.mod && g.mod.hp) || 1) * (g.mode === 'journey' ? g.adaptHp || 1 : 1);   // sobe com o setor e ao longo dele (+ força do jogador na Jornada)
+    const hpMult = (1 + 0.1 * L.n) * (1 + 0.3 * L.p) * (1 + 0.6 * L.cyc) * ((g.mod && g.mod.hp) || 1) * (g.mode === 'journey' ? (g.adaptHp || 1) * (g.rampHp || 1) : 1);   // sobe com o setor e ao longo dele (+ força do jogador na Jornada)
 
     for (let i = 0; i < n; i++) {
       const off = 40 + i * 28 + rng.range(0, 30);
