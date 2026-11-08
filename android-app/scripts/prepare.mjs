@@ -11,8 +11,12 @@ const web = join(root, '..', 'web');
 const www = join(root, 'www');
 const run = (cmd) => execSync(cmd, { cwd: root, stdio: 'inherit' });
 
-// Anúncios: ADS_MODE=real gera a versão da loja (AdMob da RX Games); qualquer outro valor = anúncios de teste do Google.
-const ADS_MODE = process.env.ADS_MODE === 'real' ? 'real' : 'test';
+// Canal: CHANNEL=store gera a versão da loja (anúncios reais, sem o aviso de atualização do App Distribution,
+// que a Play Store não permite). Qualquer outro valor = versão de teste (anúncios de teste do Google + aviso de versão nova).
+const STORE = process.env.CHANNEL === 'store';
+const ADS_MODE = STORE || process.env.ADS_MODE === 'real' ? 'real' : 'test';
+const BUILD_NUMBER = parseInt(process.env.BUILD_NUMBER || '1', 10) || 1;
+const GAME_VERSION = (readFileSync(join(web, 'src', 'config.js'), 'utf8').match(/VERSION = '([^']*)'/) || [])[1] || '0';
 const ADMOB_APP_ID = ADS_MODE === 'real' ? 'ca-app-pub-6649269264969475~7641906932' : 'ca-app-pub-3940256099942544~3347511713';
 
 // 1) Jogo → www/
@@ -63,14 +67,16 @@ import android.os.Bundle;
 import android.view.Display;
 import android.view.WindowManager;
 import com.getcapacitor.BridgeActivity;
-
+${STORE ? '' : 'import com.google.firebase.appdistribution.FirebaseAppDistribution;\n'}
 // Gerado por android-app/scripts/prepare.mjs (não editar aqui).
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestHighRefreshRate();
-    }
+${STORE ? '' : `        // Versão de teste: se houver APK novo no App Distribution, o testador vê "Nova versão → Atualizar"
+        try { FirebaseAppDistribution.getInstance().updateIfNewReleaseAvailable(); } catch (Exception ignored) { }
+`}    }
 
     @Override
     public void onResume() {
@@ -116,6 +122,18 @@ if (existsSync(vars)) {
   else v = v.replace(/ext\s*\{/, "ext {\n    androidxCredentialsVersion = '1.5.0'");
   writeFileSync(vars, v);
   console.log('✔ variables.gradle: rgcfaIncludeGoogle = true, androidxCredentialsVersion = 1.5.0');
+}
+
+// 3c2) Versão do APK (o aviso de atualização compara versionCode) e SDK do App Distribution (só na versão de teste)
+const appGradle0 = join(root, 'android', 'app', 'build.gradle');
+if (existsSync(appGradle0)) {
+  let g = readFileSync(appGradle0, 'utf8');
+  g = g.replace(/versionCode\s+\d+/, `versionCode ${BUILD_NUMBER}`).replace(/versionName\s+"[^"]*"/, `versionName "${GAME_VERSION.replace(/"/g, '')} (${BUILD_NUMBER})"`);
+  const dep = "implementation 'com.google.firebase:firebase-appdistribution:16.0.0-beta20'   // prepare.mjs (versão de teste)";
+  if (!STORE && !g.includes('firebase-appdistribution')) g = g.replace(/dependencies\s*\{/, `dependencies {\n    ${dep}`);
+  if (STORE) g = g.split('\n').filter((l) => !l.includes('firebase-appdistribution')).join('\n');
+  writeFileSync(appGradle0, g);
+  console.log(`✔ build.gradle: versão ${GAME_VERSION} (${BUILD_NUMBER})${STORE ? ' · loja' : ' · teste com aviso de atualização'}`);
 }
 
 // 3d) Assinatura do APK de teste SEMPRE com android-app/keystore/debug.keystore

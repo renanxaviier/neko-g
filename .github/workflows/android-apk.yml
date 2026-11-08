@@ -18,6 +18,11 @@ concurrency:
   group: apk-${{ github.ref }}
   cancel-in-progress: true
 
+# id-token: o GitHub emite um token que o Google aceita (Federação de identidade, sem chave secreta guardada)
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   build:
     if: ${{ !contains(github.event.head_commit.message, '[skip apk]') }}
@@ -62,6 +67,8 @@ jobs:
 
       - name: Preparar projeto Android
         working-directory: android-app
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}   # versionCode do APK (o aviso de atualização compara versões)
         run: npm run prepare:android
 
       # Chave de teste fixa (a SHA-1 dela está cadastrada no Firebase para o login com Google)
@@ -87,10 +94,32 @@ jobs:
           SIGNER=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)apksigner
           $SIGNER verify --print-certs "$APK" | tee /tmp/certs.txt
           grep -i "SHA-1 digest: 18b0078ede440e99407b34156a244837017c34e5" /tmp/certs.txt || { echo "::error::APK assinado com outra chave (SHA-1 diferente da cadastrada no Firebase)"; exit 1; }
-          grep -rh 'default_web_client_id' android-app/android/app/build/ || echo "::warning::default_web_client_id não gerado"
+          grep -rhoE 'default_web_client_id" translatable="false">[^<]*' android-app/android/app/build/ | sort -u || echo "::warning::default_web_client_id não gerado"
 
       - uses: actions/upload-artifact@v4
         with:
           name: neko-g-apk-${{ github.run_number }}
           path: android-app/android/app/build/outputs/apk/debug/*.apk
           retention-days: 14
+
+      # Envia o APK aos testadores (Firebase App Distribution). Eles recebem o aviso e o jogo oferece "Atualizar".
+      # Autenticação sem chave: o Google confere que o pedido vem deste repositório (pool "github", provedor "neko-g-actions").
+      - name: Autenticar no Google (sem chave)
+        id: gauth
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/917194353955/locations/global/workloadIdentityPools/github/providers/neko-g-actions
+          service_account: neko-g-ci@neko-g.iam.gserviceaccount.com
+
+      - name: Enviar aos testadores (App Distribution)
+        if: github.ref == 'refs/heads/main' && steps.gauth.outcome == 'success'
+        continue-on-error: true
+        run: |
+          APK=$(ls android-app/android/app/build/outputs/apk/debug/*.apk | head -1)
+          VER=$(grep -oE "VERSION = '[^']*'" web/src/config.js | cut -d"'" -f2)
+          printf 'v%s (build %s)\n%s\n' "$VER" "${{ github.run_number }}" "$(git log -1 --pretty=%B | head -c 2500)" > /tmp/notes.txt
+          npx --yes firebase-tools@15 appdistribution:distribute "$APK" \
+            --app 1:917194353955:android:16bec733171a0475d6f096 \
+            --groups testadores --release-notes-file /tmp/notes.txt
