@@ -21,6 +21,7 @@ export const STAGE_TYPES = {
 // embaralhados (sem repetir o anterior), então a sequência muda de volta para volta.
 function biomeOrder(cycle) {
   const ids = SECTOR_ORDER.slice();
+  if (cycle === 0) return ids;                            // v0.24: 1º ciclo = capítulos da história, do Distrito até a Torre
   const rng = new Rng(hash(0x6a09e667, cycle));
   for (let i = ids.length - 1; i > 0; i--) { const j = rng.int(0, i + 1); [ids[i], ids[j]] = [ids[j], ids[i]]; }
   if (cycle === 0) { ids.splice(ids.indexOf('distrito'), 1); ids.unshift('distrito'); }

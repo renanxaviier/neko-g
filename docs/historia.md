@@ -1,8 +1,8 @@
-# História do Neko G — **[PROPOSTA]**
+# História do Neko G — **aprovada pelo produtor em 08/11/2026**
 
 > Texto de ambientação criado pelo agente `web-wiki` para o site (`site/index.html`, seção História) em 08/11/2026.
 > **Nada aqui é regra de jogo.** Mecânicas e números continuam valendo só pelo GDD e pelo código.
-> Precisa da aprovação do produtor (e revisão do `game-designer`) antes de virar canon.
+> Aprovada em 08/11/2026: é canon. O roteiro dos capítulos da Jornada está em `docs/roteiro.md` (fonte: `web/src/story.js`).
 
 ## Resumo (uma linha)
 Um sinal saído do topo da Torre Corporativa reprogramou as máquinas e os animais cibernéticos da cidade; um bando de animais de rua com implantes neon (o Neko G) atravessa os 13 setores até a Torre para desligá-lo.

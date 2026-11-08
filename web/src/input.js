@@ -8,6 +8,7 @@ const RIGHT = new Set(['ArrowRight', 'KeyD']);
 const JUMP = new Set(['Space', 'KeyW', 'ArrowUp', 'KeyZ']);
 const DASH = new Set(['ShiftLeft', 'ShiftRight', 'KeyK', 'KeyX', 'KeyL']);
 const ATTACK = new Set(['KeyJ', 'KeyC', 'Enter']);
+const SPECIAL = new Set(['KeyQ', 'KeyE', 'KeyV']);           // ataque especial (arma com barra de MP)
 const ATTACK_BUFFER = 0.12;
 
 export class Input {
@@ -16,6 +17,7 @@ export class Input {
     this.jumpBuf = 0;
     this.dashBuf = 0;
     this.attackBuf = 0;
+    this.specialBuf = 0;
     this.moveX = 0;
     this._keys = new Set();
     this._touch = { left: false, right: false, jump: false, attack: false, lastDir: 0 };
@@ -40,16 +42,19 @@ export class Input {
   consumeJump() { this.jumpBuf = 0; }
   consumeDash() { this.dashBuf = 0; }
   consumeAttack() { this.attackBuf = 0; }
-  clear() { this.jumpBuf = 0; this.dashBuf = 0; this.attackBuf = 0; }
+  consumeSpecial() { const b = this.specialBuf > 0 || !!(this._bot && this._bot.special); this.specialBuf = 0; return b; }
+  clear() { this.jumpBuf = 0; this.dashBuf = 0; this.attackBuf = 0; this.specialBuf = 0; }
 
   pressJump() { if (this.enabled) this.jumpBuf = PLAYER.jumpBuffer; }
   pressDash() { if (this.enabled) this.dashBuf = PLAYER.dashBuffer; }
   pressAttack() { if (this.enabled) this.attackBuf = ATTACK_BUFFER; }
+  pressSpecial() { if (this.enabled) this.specialBuf = 0.25; }
 
   tick(dt) {
     this.jumpBuf -= dt;
     this.dashBuf -= dt;
     this.attackBuf -= dt;
+    this.specialBuf -= dt;
     if (this._bot) { this.moveX = this._bot.moveX; return; }
     let x = 0;
     for (const k of LEFT) if (this._keys.has(k)) x -= 1;
@@ -68,12 +73,13 @@ export class Input {
     window.addEventListener('keydown', (e) => {
       const tg = e.target;                            // digitando num campo (conta): o jogo não captura a tecla
       if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA')) return;
-      if (JUMP.has(e.code) || DASH.has(e.code) || LEFT.has(e.code) || RIGHT.has(e.code) || ATTACK.has(e.code)) e.preventDefault();
+      if (JUMP.has(e.code) || DASH.has(e.code) || LEFT.has(e.code) || RIGHT.has(e.code) || ATTACK.has(e.code) || SPECIAL.has(e.code)) e.preventDefault();
       if (e.repeat) return;
       this._keys.add(e.code);
       if (JUMP.has(e.code)) this.pressJump();
       if (DASH.has(e.code)) this.pressDash();
       if (ATTACK.has(e.code)) this.pressAttack();
+      if (SPECIAL.has(e.code)) this.pressSpecial();
     });
     window.addEventListener('keyup', (e) => this._keys.delete(e.code));
     window.addEventListener('blur', () => {
@@ -83,7 +89,7 @@ export class Input {
   }
 
   // Botões de toque com multitoque (cada dedo é um ponteiro independente)
-  bindTouch({ leftBtn, rightBtn, jumpBtn, dashBtn, attackBtn }) {
+  bindTouch({ leftBtn, rightBtn, jumpBtn, dashBtn, attackBtn, specialBtn }) {
     const t = this._touch;
     const bind = (btn, onDown, onUp) => {
       btn.addEventListener('pointerdown', (e) => {
@@ -102,5 +108,6 @@ export class Input {
     bind(jumpBtn, () => { t.jump = true; this.pressJump(); }, () => { t.jump = false; });
     bind(dashBtn, () => this.pressDash(), () => {});
     bind(attackBtn, () => { t.attack = true; this.pressAttack(); }, () => { t.attack = false; });
+    if (specialBtn) bind(specialBtn, () => this.pressSpecial(), () => {});
   }
 }

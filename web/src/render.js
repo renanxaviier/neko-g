@@ -772,6 +772,55 @@ export class Renderer {
     x.filter = 'none';
   }
 
+  // Retrato das cenas da história. kind: 'char' (pedestal da tela de personagens, nítido, do peito para cima),
+  // 'boss' (quadro do chefe inteiro) ou 'sinal' (holograma desenhado na hora). flip = olhando para a esquerda.
+  drawPortrait(canvas, kind, id, t, flip) {
+    const x = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.clearRect(0, 0, W, H);
+    if (kind === 'sinal') return this._sinalFace(x, W, H, t);
+    const BOSS_ANIM = { polvo: 'polvo.move', quimera: 'quimera.p1', dragao: 'dragao.move', trex: 'trex.move', mecha: 'mecha.move',
+      serpente: 'serpente.move', tita: 'tita.walk', rainha: 'rainha.hover', sentinela: 'sentinela.fly' };
+    const anim = kind === 'char' ? `menu.${id}` : BOSS_ANIM[id];
+    if (kind === 'char') this._sheet('menu'); else this._sheet('boss');
+    const fr = anim && this._frame(anim, t);
+    const img = fr && this._img(fr.s);
+    if (!img) return;
+    x.save();
+    if (flip) { x.translate(W, 0); x.scale(-1, 1); }
+    if (kind === 'char') {                               // escala inteira; o pedestal fica abaixo da borda
+      const k = Math.max(1, Math.floor((H * 1.18) / fr[3]));
+      x.imageSmoothingEnabled = false;
+      x.drawImage(img, fr[0], fr[1], fr[2], fr[3], Math.round(W / 2 - fr[4] * k), Math.round(H * 1.2 - fr[5] * k), fr[2] * k, fr[3] * k);
+    } else {
+      const k = Math.min((H * 0.92) / fr[3], (W * 0.98) / fr[2]);
+      x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+      x.drawImage(img, fr[0], fr[1], fr[2], fr[3], Math.round(W / 2 - (fr[2] * k) / 2), Math.round(H / 2 - (fr[3] * k) / 2), fr[2] * k, fr[3] * k);
+    }
+    x.restore();
+  }
+
+  // O Sinal: um olho de holograma magenta, com linhas de varredura e cortes de glitch
+  _sinalFace(x, W, H, t) {
+    const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.36;
+    const g1 = x.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 1.4);
+    g1.addColorStop(0, 'rgba(255,60,120,0.55)'); g1.addColorStop(1, 'rgba(255,60,120,0)');
+    x.fillStyle = g1; x.fillRect(0, 0, W, H);
+    x.lineWidth = Math.max(2, W * 0.025);
+    x.strokeStyle = '#ff3b5c'; x.shadowColor = '#ff3b5c'; x.shadowBlur = W * 0.06;
+    x.beginPath(); x.ellipse(cx, cy, R, R * 0.62, 0, 0, Math.PI * 2); x.stroke();
+    const pr = R * (0.34 + 0.05 * Math.sin(t * 3));
+    x.fillStyle = '#ffd1dc'; x.beginPath(); x.arc(cx + Math.sin(t * 0.9) * R * 0.18, cy, pr, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#05030f'; x.beginPath(); x.arc(cx + Math.sin(t * 0.9) * R * 0.18, cy, pr * 0.45, 0, Math.PI * 2); x.fill();
+    x.shadowBlur = 0;
+    x.fillStyle = 'rgba(0,0,0,0.28)';
+    for (let y = 0; y < H; y += 4) x.fillRect(0, y, W, 2);
+    if (Math.sin(t * 7.3) > 0.6) {                       // corte de glitch de vez em quando
+      const y = (Math.sin(t * 13) * 0.5 + 0.5) * H * 0.8, h = H * 0.08;
+      x.drawImage(x.canvas, 0, y, W, h, W * 0.06, y, W, h);
+    }
+  }
+
   // Palco da tela "Escolher personagem": o atual no centro (escala inteira, nítido) e os vizinhos menores
   // e escuros dos lados. slide: deslocamento da troca (-1..1, volta a 0). items: [{ id, color, dim }].
   drawCharStage(canvas, items, cur, t, slide) {
@@ -1203,6 +1252,19 @@ export class Renderer {
       if (!fr) continue;
       ctx.globalCompositeOperation = 'lighter';
       this._drawFrame(ctx, fr, sh.x, sh.y, 1, false, 1, 1, Math.atan2(sh.vy, sh.vx));
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    // projéteis das armas v0.24 (lâmina, plasma, anel de choque)
+    const wp = this.game.skills.wproj;
+    if (wp) {
+      ctx.globalCompositeOperation = 'lighter';
+      for (const w of wp) {
+        if (!w.active || w.delay > 0) continue;
+        const fr = this._frame(w.anim, w.t);
+        if (!fr) continue;
+        if (w.kind === 'plasma') this._drawFrame(ctx, fr, w.x, w.y, 1, false, 1, 1, Math.atan2(w.vy, w.vx));
+        else this._drawFrame(ctx, fr, w.x, w.y, w.dir < 0 ? -1 : 1, false, w.sc || 1, w.sc || 1);
+      }
       ctx.globalCompositeOperation = 'source-over';
     }
     const star = this._frame('fx.shuriken', 0), star2 = this._frame('fx.star', 0);

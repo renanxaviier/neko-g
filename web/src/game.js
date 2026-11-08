@@ -2,6 +2,8 @@
 
 import { RUN, TILE, xpForLevel, SAVE_KEY, WATER, JOURNEY, WEAPONS } from './config.js';
 import { journeyMap, starCount } from './journey.js';
+import { storyOf, mapBossId } from './story.js';
+import { BOSS_ORDER, WATER_BOSSES } from './boss.js';
 import { talentStats, charLevel, runCharXp, canLearn } from './talents.js';
 import { Rng } from './rng.js';
 import { World } from './world.js';
@@ -92,7 +94,7 @@ export class Game {
     this.areaMult = 1; this.vampLvl = 0;
     this.hasRevived = false; this.usedRevive = false; this.isDying = false; this.dyingT = 0; this.deathAnim = 0;
     this.batteries = 0; this.elitesKilled = 0; this.mod = {};
-    this.map = null; this.stageInfo = null; this.stage = 0;
+    this.map = null; this.stageInfo = null; this.stage = 0; this.story = null;
     this.expedition = 1; this.adaptEx = 0; this.adaptHp = 1; this.adaptAlive = 1;
     this.startIntro(RUN.introTime);
     this.iframes = 0; this.hurtFlash = 0; this.hitStop = 0;
@@ -126,6 +128,7 @@ export class Game {
 
   // Um passo fixo da simulação (só no estado Playing; Level Up, Revive e Game Over = timeScale 0)
   step(dt) {
+    if (this.story) return;                            // cena da história na tela: tudo parado
     if (this.introT > 0) {                             // início de fase: tudo parado enquanto a tela clareia
       this.introT -= dt; this.introWait += dt;
       const R = this.renderer, bid = this.sectorInfo && this.sectorInfo.biome.id;
@@ -224,8 +227,8 @@ export class Game {
 
   // Pausa de impacto dos golpes comuns: curta e no máximo uma a cada RUN.hitStopGap s.
   // (Antes cada golpe que acertava congelava 25 ms: com ataque contínuo parecia queda de quadros.)
-  addHitStop(t) {
-    if (this.time - (this._hsAt || -9) < RUN.hitStopGap) return;
+  addHitStop(t, force = false) {
+    if (!force && this.time - (this._hsAt || -9) < RUN.hitStopGap) return;
     this._hsAt = this.time;
     this.hitStop = Math.max(this.hitStop, t);
   }
@@ -242,6 +245,7 @@ export class Game {
   onEnemyKilled(e) {
     if (e.def.boss) return this.onBossKilled(e);
     this.kills++;
+    if (this.skills.weapon) this.skills.addMp(WEAPONS.special.perKill);
     if (e.def.tier === 'tank') this.runStats.tanks++;
     if (this.water) this.water.emit(e.cx, e.cy, e.def.tier === 'weak' ? 3 : 6, e.w * 0.4, 1.2);
     if (this.vampLvl && this.time - (this._vampT || 0) >= 0.5) {      // Vampirismo Digital
@@ -295,7 +299,9 @@ export class Game {
     this._setWater(info.biome.medium === 'water');
     this.audio.setTrack(info.biome.music || 'main');
     this.biome = info.bi; this.runStats.biomes.add(info.bi);
-    this.spawner.bossIdx = m;                          // o chefe do mapa segue a ordem dos chefões
+    const bid = mapBossId(info);                       // chefe do mapa (no 1º ciclo, o do capítulo da história)
+    this.spawner.bossIdx = bid ? Math.max(0, BOSS_ORDER.indexOf(bid)) : m;
+    this.spawner.waterBoss = null;
     this.mapDoneT = 0;
     this.mod = info.mod || {};                         // modificador do mapa (Enxame, Blindados…)
     this.skills.applyPassives();
@@ -317,6 +323,32 @@ export class Game {
     this.sectorBossAt = st.type === 'boss' ? JOURNEY.bossDelay : Infinity;
     if (st.type === 'reach') this._placeExit(st.goal);
     if (this.ui) this.ui.showStage(this.map, s, st, last);
+    if (s === 0) this._story('intro');                 // modo história: abertura do capítulo
+    else if (st.type === 'boss') this._story('boss');  // e a provocação do chefe
+  }
+
+  // ---------------- Modo história (cenas de diálogo da Jornada) ----------------
+  // Tudo fica parado enquanto a cena roda; a contagem 3-2-1 começa depois. Cada cena aparece uma vez (meta.story).
+  _story(kind, done) {
+    if (this.mode !== 'journey' || !this.map || !this.ui || this.params.has('bot')) return false;
+    const S = storyOf(this.map), lines = S && S[kind];
+    if (!lines || !lines.length) return false;
+    const seen = this.meta.story || (this.meta.story = {}), k = String(this.map.n), mark = kind[0];
+    if ((seen[k] || '').includes(mark) && !this.params.has('story')) return false;
+    seen[k] = (seen[k] || '') + mark;
+    this.saveMeta();
+    this.story = true;
+    this.ui.playStory({ lines, title: kind === 'intro' ? S.title : null, chapter: this.map.num, bossId: this._storyBoss() }, () => {
+      this.story = null; this.input.clear();
+      if (done) done();
+    });
+    return true;
+  }
+
+  _storyBoss() {
+    if (!this.water) return BOSS_ORDER[this.spawner.bossIdx % BOSS_ORDER.length];
+    const sp = this.spawner;                           // aquático: sorteia já, para a cena mostrar o chefe certo
+    return sp.waterBoss || (sp.waterBoss = WATER_BOSSES[this.rng.chance(0.5) ? 0 : 1]);
   }
 
   // Quanto do objetivo já foi feito (na unidade do objetivo) e a fração 0..1
@@ -405,6 +437,11 @@ export class Game {
   }
 
   _journeyWin() {
+    if (this._story('outro', () => this._journeyWinNow())) return;   // desfecho do capítulo antes do resultado
+    this._journeyWinNow();
+  }
+
+  _journeyWinNow() {
     const m = this.map.n, k = this.mapReplay ? JOURNEY.replayMult : 1;
     const bonusScrap = Math.round((JOURNEY.clearScrap.base + JOURNEY.clearScrap.perMap * m) * k);
     // Estrelas: vencer · sem revive · vida alta no fim. Cada estrela nova (1ª vez) dá Cyber-Moedas.

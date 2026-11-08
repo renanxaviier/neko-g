@@ -94,11 +94,13 @@ export class Skills {
     for (const f of this.fire) f.active = false;
     // Arma exclusiva do personagem (comprada na tela de personagens): dispara sozinha
     const g = this.game, wid = g.char && g.char.weapon, wl = wid ? ((g.meta.weapons || {})[wid] || 0) : 0;
-    this.weapon = wl ? { id: wid, lvl: wl, t: 1.2, def: WEAPONS[wid] } : null;
+    this.weapon = wl ? { id: wid, lvl: wl, t: 1.2, def: WEAPONS[wid], mp: WEAPONS.special.mpStart } : null;
     this.swipes = this.swipes || Array.from({ length: 6 }, () => ({ active: false, hit: new Set() }));
     for (const w of this.swipes) w.active = false;
     this.waves = this.waves || Array.from({ length: 6 }, () => ({ active: false, hit: new Set() }));
     for (const w of this.waves) w.active = false;
+    this.wproj = this.wproj || Array.from({ length: 8 }, () => ({ active: false, hit: new Set() }));   // projéteis das armas v0.24
+    for (const w of this.wproj) w.active = false;
     this.droneCount = 0;
     this._trailX = null;
     for (const id of [].concat(startSkills || [])) this.gain(id);
@@ -212,17 +214,126 @@ export class Skills {
   }
 
   // ---------------- Armas exclusivas (v0.16) ----------------
+  // MP do ataque especial: golpes que acertam e abates enchem a barra
+  addMp(v) { const W = this.weapon; if (W) W.mp = Math.min(WEAPONS.special.mpMax, W.mp + v); }
+  get mpFrac() { const W = this.weapon; return W ? W.mp / WEAPONS.special.mpMax : 0; }
+
   _weaponStep(dt) {
-    const W = this.weapon, D = W.def, g = this.game;
-    this._stepSwipes(dt); this._stepWaves(dt);
-    if ((W.t -= dt) > 0) return;
-    const near = this._nearestDist();
-    if (near > 300) { W.t = 0.25; return; }            // ninguém perto: espera (não gasta o golpe no vazio)
-    W.t = D.cd * Math.pow(D.cdMul, W.lvl - 1) * g.cdMult;
-    const dmg = (D.dmg + D.dmgPer * (W.lvl - 1)) * g.damageMult;
+    const W = this.weapon, D = W.def, g = this.game, SP = WEAPONS.special;
+    this._stepSwipes(dt); this._stepWaves(dt); this._stepWProj(dt);
+    W.mp = Math.min(SP.mpMax, W.mp + SP.regen * dt / Math.max(0.4, g.cdMult));   // recarga de skills também acelera o MP
+    const wants = g.input.consumeSpecial();
+    if (W.mp < SP.mpMax) return;
+    if (!wants && !g.settings.auto) return;                // manual: só com o botão ESPECIAL
+    if (!wants && this._nearestDist() > 300) return;       // automático: só com inimigo por perto
+    W.mp = 0;
+    const dmg = (D.dmg + D.dmgPer * (W.lvl - 1)) * g.damageMult * SP.dmgMult;
+    g.addHitStop(SP.hitStop, true);
+    g.fx.shake(6);
+    if (g.juice) g.juice.glitch(0.15);
+    g.fx.effect('ring', { x: g.player.cx, y: g.player.cy, r: 8, maxR: 90, color: D.color, life: 0.35 });
+    g.vibe(30);
     if (W.id === 'garrasE') this._wGarras(D, W.lvl, dmg);
     else if (W.id === 'corteDados') this._wDados(D, W.lvl, dmg);
     else if (W.id === 'martelo') this._wMartelo(D, W.lvl, dmg);
+    else if (W.id === 'luaE') this._wLua(D, W.lvl, dmg);
+    else if (W.id === 'plasma') this._wPlasma(D, W.lvl, dmg);
+    else if (W.id === 'choque') this._wChoque(D, W.lvl, dmg);
+  }
+
+  // ---- Armas v0.24: projéteis (lâmina bumerangue, plasma que explode, anel de choque) ----
+  _proj(o) {
+    const w = this.wproj.find((q) => !q.active);
+    if (!w) return null;
+    w.hit.clear();
+    return Object.assign(w, { active: true, t: 0, back: false, vy: 0 }, o);
+  }
+
+  // Lâmina Meia-Lua (Coelho): vai até o alcance e volta para o Coelho, acertando nos dois sentidos
+  _wLua(D, lvl, dmg) {
+    const g = this.game, p = g.player, dirs = lvl >= 5 ? [p.facing, -p.facing] : [p.facing];
+    for (const dir of dirs) this._proj({ kind: 'lua', x: p.cx + dir * 18, y: p.cy - 8, dir, vx: dir * D.speed, left: D.range * g.areaMult, dmg, h: D.h * g.areaMult, anim: D.anim, sc: g.areaMult });
+    g.fx.sfx('claw');
+  }
+
+  // Plasma de Dados (Macaco): esfera mirada no inimigo mais próximo; explode no primeiro contato (ou no fim do alcance)
+  _wPlasma(D, lvl, dmg) {
+    const g = this.game, p = g.player, targets = this._nearestTargets(lvl >= 5 ? 2 : 1, D.range);
+    if (!targets.length) targets.push(null);
+    targets.forEach((e, i) => {
+      const tx = e ? e.cx : p.cx + p.facing * D.range, ty = e ? e.cy : p.cy - 10;
+      const a = Math.atan2(ty - (p.cy - 10), tx - p.cx), sp = D.speed;
+      this._proj({ kind: 'plasma', x: p.cx + Math.cos(a) * 16, y: p.cy - 10 + Math.sin(a) * 16, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, dir: Math.cos(a) < 0 ? -1 : 1,
+        left: D.range * 1.1, dmg, r: D.r * g.areaMult * (lvl >= 5 ? 1.3 : 1), anim: D.anim, boom: D.boom, delay: i * 0.12 });
+    });
+    g.fx.sfx('laser');
+  }
+
+  // Ondas de Choque (Tatu): um anel para cada lado, rente ao chão; atravessa, empurra (e trava no Nv 5)
+  _wChoque(D, lvl, dmg) {
+    const g = this.game, p = g.player;
+    for (const dir of [1, -1]) this._proj({ kind: 'ring', x: p.cx + dir * 14, y: p.bottom - 22, dir, vx: dir * D.speed, left: D.range * g.areaMult, dmg,
+      h: D.h * g.areaMult, knock: D.knock, stun: lvl >= 5 ? D.stun : 0, anim: D.anim, end: D.end, sc: g.areaMult });
+    g.fx.shake(3);
+    if (g.juice) g.juice.shock(p.cx, p.bottom - 6, 70, 0.05, 0.35);
+    g.fx.sfx('boom');
+  }
+
+  _nearestTargets(n, range) {
+    const p = this.game.player, out = [];
+    const near = this.game.enemies.grid.query(p.cx - range, p.cy - range * 0.7, p.cx + range, p.cy + range * 0.7, this._near);
+    const list = [];
+    for (let i = 0; i < near.length; i++) { const e = near[i]; if (e.active && !e.def.prop) list.push(e); }
+    list.sort((a, b) => Math.hypot(a.cx - p.cx, a.cy - p.cy) - Math.hypot(b.cx - p.cx, b.cy - p.cy));
+    for (let i = 0; i < Math.min(n, list.length); i++) out.push(list[i]);
+    return out;
+  }
+
+  _stepWProj(dt) {
+    const g = this.game, p = g.player;
+    for (const w of this.wproj) {
+      if (!w.active) continue;
+      if (w.delay > 0) { w.delay -= dt; continue; }
+      w.t += dt;
+      if (w.kind === 'lua') {                                    // bumerangue: ao chegar no alcance, volta para o Coelho
+        if (!w.back) { const st = Math.abs(w.vx) * dt; w.x += w.vx * dt; w.left -= st; if (w.left <= 0) { w.back = true; w.hit.clear(); } }
+        else {
+          const dx = p.cx - w.x, dy = (p.cy - 8) - w.y, d = Math.hypot(dx, dy) || 1, sp = 560;
+          w.x += (dx / d) * sp * dt; w.y += (dy / d) * sp * dt; w.dir = dx < 0 ? -1 : 1;
+          if (d < 22 || w.t > 2.5) { w.active = false; continue; }
+        }
+        this._wHitBox(w, w.x - 24, w.y - w.h / 2, w.x + 24, w.y + w.h / 2, 90);
+      } else if (w.kind === 'plasma') {
+        w.x += w.vx * dt; w.y += w.vy * dt; w.left -= Math.hypot(w.vx, w.vy) * dt;
+        let boom = w.left <= 0 || g.world.isSolidAt(w.x, w.y);
+        if (!boom) {
+          const near = g.enemies.grid.query(w.x - 30, w.y - 30, w.x + 30, w.y + 30, this._near);
+          for (let i = 0; i < near.length; i++) { const e = near[i]; if (e.active && !e.def.prop && w.x > e.x - 6 && w.x < e.x + e.w + 6 && w.y > e.y - 6 && w.y < e.y + e.h + 6) { boom = true; break; } }
+        }
+        if (boom) {
+          w.active = false;
+          g.fx.seq(w.boom, w.x, w.y, 0.4, 1, w.r / 64, 0, 0, true);
+          const near = g.enemies.grid.query(w.x - w.r - 20, w.y - w.r - 20, w.x + w.r + 20, w.y + w.r + 20, this._near);
+          for (let i = 0; i < near.length; i++) { const e = near[i]; if (e.active && Math.hypot(e.cx - w.x, e.cy - w.y) < w.r + Math.max(e.w, e.h) / 2) g.enemies.hurt(e, w.dmg, w.x, 140); }
+          g.fx.emit(w.x, w.y, 10, '#4dff7a', 160, 0.4, 2); g.fx.sfx('boom');
+        }
+      } else if (w.kind === 'ring') {
+        const st = Math.abs(w.vx) * dt; w.x += w.vx * dt; w.left -= st;
+        if (w.left <= 0 || g.world.isSolidAt(w.x + w.dir * 16, w.y)) { w.active = false; g.fx.seq(w.end, w.x, w.y, 0.3, w.dir, w.sc * 0.8, 0, 0, true); continue; }
+        this._wHitBox(w, w.x - 22, w.y - w.h / 2, w.x + 22, w.y + w.h / 2, w.knock, w.stun);
+      }
+    }
+  }
+
+  _wHitBox(w, x0, y0, x1, y1, knock, stun = 0) {
+    const g = this.game, near = g.enemies.grid.query(x0 - 30, y0 - 30, x1 + 30, y1 + 30, this._near);
+    for (let i = 0; i < near.length; i++) {
+      const e = near[i];
+      if (!e.active || w.hit.has(e) || e.x > x1 || e.x + e.w < x0 || e.y > y1 || e.y + e.h < y0) continue;
+      w.hit.add(e);
+      g.enemies.hurt(e, w.dmg, w.x - (w.dir || 1) * 30, knock);
+      if (stun && !e.def.boss) { e.stun = Math.max(e.stun, stun); g.fx.emit(e.cx, e.cy, 3, '#ffd84d', 90, 0.3, 2); }
+    }
   }
 
   _nearestDist() {
@@ -352,7 +463,7 @@ export class Skills {
       }
     }
     g.fx.sfx('claw');
-    if (hits.length) g.addHitStop(0.018);
+    if (hits.length) { g.addHitStop(0.018); if (this.weapon) this.addMp(Math.min(WEAPONS.special.perHitMax, hits.length * WEAPONS.special.perHit)); }
     if (evo) this._chain(hits, dmg * 0.6);
   }
 

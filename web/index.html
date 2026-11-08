@@ -44,6 +44,28 @@
   .tbtn.tut-on::before { border-color: #fff; border-style: solid; animation: tutPulse 0.9s ease-in-out infinite; }
   @keyframes tutPulse { 50% { transform: scale(1.18); opacity: .4; } }
   /* Início de fase (v0.22): tela clareando com tudo parado */
+  /* Modo história (v0.24) */
+  #ov-story { position: absolute; inset: 0; z-index: 150; display: flex; flex-direction: column; justify-content: flex-end; user-select: none; -webkit-user-select: none;
+    background: linear-gradient(to top, rgba(5,3,15,.92) 0%, rgba(5,3,15,.55) 42%, rgba(5,3,15,.25) 100%); }
+  #ov-story.hidden { display: none; }
+  #st-title { position: absolute; top: 24%; left: 0; right: 0; text-align: center; opacity: 0; pointer-events: none; }
+  #st-title.show { animation: stTitle 2.6s ease-out both; }
+  #st-title small { display: block; font-size: 12px; font-weight: 800; letter-spacing: 5px; color: #b9a6ff; }
+  #st-title b { display: block; font-size: 30px; font-weight: 900; letter-spacing: 3px; color: #fff; text-shadow: 0 0 10px #ff4df0, 0 0 26px #ff4df0; text-transform: uppercase; }
+  @keyframes stTitle { 0% { opacity: 0; transform: translateY(10px); } 15%, 75% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  #st-skip { position: absolute; top: calc(env(safe-area-inset-top) + 14px); right: 12px; padding: 8px 14px; border-radius: 10px; border: 1.5px solid #b9a6ff;
+    background: rgba(10,8,30,.8); color: #ece8ff; font: 800 12px "Trebuchet MS", system-ui, sans-serif; letter-spacing: 1.5px; }
+  .st-row { position: relative; margin: 0 10px calc(env(safe-area-inset-bottom) + 22px); }
+  #st-face { position: absolute; top: auto; bottom: calc(100% - 10px); width: 132px; height: 132px; image-rendering: pixelated; filter: drop-shadow(0 0 10px var(--sc, #5ef0ff)); }
+  #st-face.L { left: 6px; right: auto; } #st-face.R { right: 6px; left: auto; } #st-face.none { display: none; }
+  .st-box { --sc: #5ef0ff; position: relative; background: rgba(10,8,30,.95); border: 2px solid var(--sc); border-radius: 14px; box-shadow: 0 0 14px color-mix(in srgb, var(--sc) 60%, transparent);
+    padding: 14px 16px 22px; min-height: 104px; }
+  #st-name { display: block; color: var(--sc); font-weight: 900; letter-spacing: 2px; font-size: 14px; text-shadow: 0 0 8px var(--sc); margin-bottom: 6px; text-transform: uppercase; }
+  .st-box.R #st-name { text-align: right; }
+  #st-text { margin: 0; color: #ece8ff; font-size: 16px; line-height: 1.45; min-height: 46px; }
+  .st-box.narr #st-text { font-style: italic; text-align: center; color: #cfc4ff; }
+  #st-next { position: absolute; right: 14px; bottom: 6px; font-style: normal; color: var(--sc); animation: stBlink 0.9s steps(2) infinite; }
+  @keyframes stBlink { 50% { opacity: 0; } }
   #stage-fade { position: absolute; inset: 0; z-index: 30; pointer-events: none; display: flex; align-items: center; justify-content: center; background: #05030f; }
   #stage-fade b { font-size: 26px; font-weight: 900; letter-spacing: 6px; color: #fff; text-shadow: 0 0 10px #5ef0ff, 0 0 26px #5ef0ff; }
   #stage-fade b.num { font-size: 64px; color: #fff; text-shadow: 0 0 10px #5ef0ff, 0 0 30px #5ef0ff; animation: numPop .9s ease-out both; }
@@ -187,6 +209,14 @@
   #btn-attack { --c: var(--gold); right: calc(24px + 86px * var(--cs)); bottom: calc(env(safe-area-inset-bottom) + 26px); width: calc(92px * var(--cs)); height: calc(92px * var(--cs)); }
   #btn-dash { --c: var(--cyan); --alt: #ff9a3c; right: calc(12px + 54px * var(--cs)); bottom: calc(env(safe-area-inset-bottom) + 30px + 98px * var(--cs)); width: calc(66px * var(--cs)); height: calc(66px * var(--cs)); }
   #btn-dash small { font-size: 8px; }
+  /* Ataque especial (arma com barra de MP): acima do ATAQUE; o escuro do anel = MP que falta */
+  #btn-special { --c: var(--sp, #ff4df0); right: calc(24px + 126px * var(--cs)); bottom: calc(env(safe-area-inset-bottom) + 34px + 98px * var(--cs)); width: calc(64px * var(--cs)); height: calc(64px * var(--cs)); }
+  #btn-special.hidden { display: none; }
+  #btn-special .sp-ic { font-size: calc(26px * var(--cs)); font-weight: 900; line-height: 1; color: #fff; text-shadow: 0 0 8px var(--c); display: flex; align-items: center; justify-content: center; }
+  #btn-special small { font-size: 7px; letter-spacing: 1px; }
+  #btn-special.full { animation: spReady 0.9s ease-in-out infinite; box-shadow: 0 0 14px var(--c), 0 0 28px var(--c), inset 0 0 12px var(--c); }
+  @keyframes spReady { 50% { transform: scale(1.08); } }
+  #controls.lefty #btn-special { right: auto; left: calc(24px + 126px * var(--cs)); }
   #controls.auto #btn-attack { display: none; }
   #controls.auto #btn-dash { right: calc(28px + 86px * var(--cs)); bottom: calc(env(safe-area-inset-bottom) + 30px); width: calc(78px * var(--cs)); height: calc(78px * var(--cs)); }
   /* canhoto: direção na direita, ações na esquerda */
@@ -499,6 +529,7 @@
   .jm-mod { font-size: 12px; color: #ffd84d; }
   .jm-meta { font-size: 11px; opacity: .75; }
   .jm-card .btn { min-width: 0; width: 100%; margin-top: 2px; }
+  .jm-btns { display: flex; gap: 8px; } .jm-btns #jm-story { flex: 0 0 34%; }
   #ov-missions .panel, #ov-checkin .panel { width: min(92%, 360px); display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
   .ms { pointer-events: auto; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 10px 12px; border-radius: 12px;
     border: 2px solid rgba(94,240,255,.35); background: rgba(10,8,28,.85); text-align: left; }
@@ -558,8 +589,9 @@
     <button id="btn-right" class="tbtn dir" aria-label="Direita"><span class="ico" data-ic="right"></span></button>
     <button id="btn-dash" class="tbtn" aria-label="Dash"><span class="cd"></span><span class="ico" data-ic="dash"></span><small>DASH</small></button>
     <button id="btn-attack" class="tbtn" aria-label="Ataque"><span class="cd"></span><span class="ico" data-ic="gato"></span><small>GARRAS</small></button>
+    <button id="btn-special" class="tbtn hidden" aria-label="Ataque especial"><span class="cd"></span><span class="ico sp-ic"></span><small>ESPECIAL</small></button>
     <button id="btn-jump" class="tbtn" aria-label="Pulo"><span class="ico" data-ic="jump"></span><small>PULO</small><i class="pips"></i></button>
-    <div class="hint">A/D ou ←/→ mover · Espaço pular · J atacar · Shift dash</div>
+    <div class="hint">A/D ou ←/→ mover · Espaço pular · J atacar · Q especial · Shift dash</div>
   </div>
 
   <div id="ov-title" class="ov">
@@ -812,6 +844,15 @@
     </div>
   </div>
 
+  <!-- Modo história: cena de diálogo (src/story.js) -->
+  <div id="ov-story" class="hidden">
+    <div id="st-title"><small id="st-chap"></small><b id="st-name2"></b></div>
+    <button id="st-skip">PULAR ⏭</button>
+    <div class="st-row">
+      <canvas id="st-face" width="264" height="264"></canvas>
+      <div class="st-box"><b id="st-name"></b><p id="st-text"></p><i id="st-next">▼</i></div>
+    </div>
+  </div>
   <div id="stage-fade" class="hidden"><b id="stage-go">3</b></div>
   <div id="fb-toast" class="hidden"></div>
   <div id="tut" class="tut hidden"><span id="tut-text"></span><small id="tut-step"></small></div>

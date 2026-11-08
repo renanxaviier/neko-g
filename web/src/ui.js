@@ -9,6 +9,7 @@ import { exitApp } from './platform.js';
 const saveMeta = (g) => { if (g.saveMeta) g.saveMeta(); };
 import { journeyMap, goalText, goalIntro, starText, starCount, STAGE_TYPES } from './journey.js';
 import { BOSS_TYPES, BOSS_ORDER } from './boss.js';
+import { storyOf, mapBossId } from './story.js';
 import { notifications, CHANGELOG } from './notify.js';
 import { BRANCHES, TALENTS, charLevel, talentsOf, spentIn, pointsLeft, canLearn } from './talents.js';
 import { iconSvg, ATTACK_LABEL, ATTACK_COLOR } from './controlIcons.js';
@@ -28,7 +29,7 @@ export class UI {
     this.game = game;
     this.h = handlers;
     for (const s of document.querySelectorAll('.tbtn .ico')) s.innerHTML = iconSvg(s.dataset.ic);
-    this._ctl = { atk: $('btn-attack'), jump: $('btn-jump'), dash: $('btn-dash'), s: {} };
+    this._ctl = { atk: $('btn-attack'), jump: $('btn-jump'), dash: $('btn-dash'), sp: $('btn-special'), s: {} };
     this.el = {
       hud: $('hud'), hpFill: $('hp-fill'), hpText: $('hp-text'), xpFill: $('xp-fill'), lvl: $('lvl'),
       time: $('time'), kills: $('kills'), scrap: $('scrap'), skills: $('skills'), mute: $('btn-mute'),
@@ -539,7 +540,7 @@ export class UI {
     box.className = 'cs-weapon' + (bought ? ' bought' : '');
     const pips = Array.from({ length: WEAPONS.costs.length }, (_, i) => `<span class="${i < lvl ? 'on' : ''}"></span>`).join('');
     const info = lvl >= 4 ? D.max5 : D.desc;
-    box.innerHTML = `<span class="wi">${D.icon}</span><span class="wt"><small>ARMA EXCLUSIVA${lvl ? ` · NV ${lvl}` : ''}</small><b>${D.name}</b><i>${info}</i><span class="pips">${pips}</span></span>`;
+    box.innerHTML = `<span class="wi">${D.icon}</span><span class="wt"><small>ATAQUE ESPECIAL${lvl ? ` · NV ${lvl}` : ''} · BARRA DE MP</small><b>${D.name}</b><i>${info}</i><span class="pips">${pips}</span></span>`;
     const b = document.createElement('button');
     b.className = 'wb';
     b.textContent = cost === undefined ? 'MÁX' : st === 'lock' ? '🔒' : `${lvl ? '▲' : 'COMPRAR'} ⚙ ${cost}`;
@@ -862,7 +863,8 @@ export class UI {
     document.querySelectorAll('.jm-node').forEach((b) => b.classList.toggle('sel', Number(b.dataset.m) === m));
     const card = $('jm-card');
     card.style.setProperty('--c', info.biome.color);
-    const boss = info.biome.medium === 'water' ? 'Chefe aquático' : (BOSS_TYPES[BOSS_ORDER[m % BOSS_ORDER.length]] || {}).name || 'Chefe';
+    const bId = mapBossId(info), boss = bId ? (BOSS_TYPES[bId] || {}).name || 'Chefe' : 'Chefe aquático';
+    const S = storyOf(info), seen = ((meta.story || {})[m] || '');
     const stages = info.stages.map((st, i) => {
       const T = STAGE_TYPES[st.type];
       const lbl = st.type === 'boss' ? boss : st.type === 'survive' ? `${st.goal}s` : st.type === 'reach' ? `${Math.round(st.goal / 32)} m` : `${st.goal}`;
@@ -873,8 +875,97 @@ export class UI {
       <div class="jm-stages">${stages}</div>
       ${info.mod ? `<div class="jm-mod">${info.mod.icon} <b>${info.mod.name}</b> · ${info.mod.desc}</div>` : '<div class="jm-meta">Sem modificador · mapa de aprendizado</div>'}
       <div class="jm-meta">${replay ? 'Já vencido: mais fácil para você, metade do bônus. Estrelas que faltam ainda dão ◆.' : `Vencer: ⚙ Sucata + ◆ ${JOURNEY.clearCoins} · cada estrela ◆ ${JOURNEY.starCoins}${info.cycle ? ` · ciclo ${info.cycle + 1}` : ''}`}</div>
-      <button class="btn primary" id="jm-play">▶ ${replay ? 'JOGAR DE NOVO' : 'JOGAR'}</button>`;
+      ${S ? `<div class="jm-meta">📜 Capítulo ${m + 1}: <b>${S.title}</b></div>` : ''}
+      <div class="jm-btns"><button class="btn primary" id="jm-play">▶ ${replay ? 'JOGAR DE NOVO' : 'JOGAR'}</button>${S && seen ? '<button class="btn" id="jm-story">📜 REVER</button>' : ''}</div>`;
     $('jm-play').addEventListener('click', () => { this.showMaps(false); this.h.start({ mode: 'journey', map: m }); });
+    const rv = $('jm-story');
+    if (rv) rv.addEventListener('click', () => {                 // rever as cenas já vistas deste capítulo
+      const lines = [];
+      for (const k of ['intro', 'boss', 'outro']) if (seen.includes(k[0]) && S[k]) lines.push(...S[k]);
+      this.playStory({ lines, title: S.title, chapter: m + 1, bossId: bId || 'mecha' }, () => {});
+    });
+  }
+
+  // ---------------- Modo história: cena de diálogo ----------------
+  // sc = { lines: [[quem, texto]…], title, chapter, bossId }. Toque/Espaço avança (ou completa o texto); PULAR encerra.
+  playStory(sc, done) {
+    const g = this.game, heroId = (g.char && g.char.id) || g.meta.selected || 'gato';
+    const radioId = heroId === 'guaxinim' ? 'macaco' : 'guaxinim';
+    const allyId = ['pug', 'tatu', 'coelho', 'gato', 'macaco', 'guaxinim'].find((c) => c !== heroId && c !== radioId);
+    const cap = (n) => n.charAt(0) + n.slice(1).toLowerCase();
+    const nm = (id) => (CHARS[id] ? cap(CHARS[id].name) : id);
+    const bossDef = BOSS_TYPES[sc.bossId] || null;
+    const bossNm = bossDef ? bossDef.name.split(' ').map((w) => (w.length > 3 ? cap(w) : w.toLowerCase())).join(' ').replace(/^./, (c) => c.toUpperCase()) : 'Chefe';
+    const sub = (t) => t.replace(/\{hero\}/g, nm(heroId)).replace(/\{radio\}/g, nm(radioId)).replace(/\{ally\}/g, nm(allyId)).replace(/\{boss\}/g, bossNm);
+    this._story = { lines: sc.lines, i: -1, shown: 0, full: '', done, hero: heroId, radio: radioId, ally: allyId, bossId: sc.bossId, bossDef, sub, last: performance.now() };
+    const ov = $('ov-story');
+    ov.classList.remove('hidden');
+    const tt = $('st-title');
+    tt.classList.remove('show');
+    if (sc.title) { $('st-chap').textContent = `CAPÍTULO ${sc.chapter}`; $('st-name2').textContent = sc.title; void tt.offsetWidth; tt.classList.add('show'); }
+    if (!this._storyBound) {
+      this._storyBound = true;
+      ov.addEventListener('pointerdown', (e) => { if (e.target.id === 'st-skip') return; e.preventDefault(); e.stopPropagation(); this._storyNext(); });
+      $('st-skip').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); this._storyEnd(); });
+      window.addEventListener('keydown', (e) => {
+        if (!this._story) return;
+        if (['Space', 'Enter', 'KeyJ', 'KeyZ'].includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) this._storyNext(); }
+        if (e.code === 'Escape') { e.preventDefault(); this._storyEnd(); }
+      }, true);
+    }
+    this._storyNext();
+  }
+
+  _storyNext() {
+    const S = this._story;
+    if (!S) return;
+    if (S.shown < S.full.length) { S.shown = S.full.length; $('st-text').textContent = S.full; return; }   // completa a fala
+    if (++S.i >= S.lines.length) return this._storyEnd();
+    const [who, txt] = S.lines[S.i];
+    S.who = who; S.full = S.sub(txt); S.shown = 0;
+    const box = document.querySelector('#ov-story .st-box'), face = $('st-face');
+    let name = '', col = '#b9a6ff', side = 'L';
+    if (who === 'narr') { side = 'none'; }
+    else if (who === 'sinal') { name = 'O SINAL'; col = '#ff3b5c'; side = 'R'; }
+    else if (who === 'boss') { name = S.bossDef ? S.bossDef.name : 'CHEFE'; col = (S.bossDef && S.bossDef.glow) || '#ff9a3c'; side = 'R'; }
+    else {
+      const id = who === 'hero' ? S.hero : who === 'radio' ? S.radio : who === 'ally' ? S.ally : who;
+      S.charId = id; name = (CHARS[id] && CHARS[id].name) || id; col = (CHARS[id] && CHARS[id].color) || '#5ef0ff';
+      side = id === S.hero ? 'L' : 'R';
+      if (who === 'radio' || who === 'ally') name += ' · RÁDIO';
+    }
+    box.className = 'st-box' + (side === 'R' ? ' R' : '') + (who === 'narr' ? ' narr' : '');
+    box.style.setProperty('--sc', col); face.style.setProperty('--sc', col);
+    face.className = side;
+    $('st-name').textContent = name;
+    $('st-text').textContent = '';
+    this._storyFace(0);
+  }
+
+  _storyFace(t) {
+    const S = this._story, R = this.game.renderer;
+    if (!S || !R || S.who === 'narr') return;
+    const face = $('st-face'), right = face.className === 'R';
+    if (S.who === 'sinal') R.drawPortrait(face, 'sinal', null, t, false);
+    else if (S.who === 'boss') R.drawPortrait(face, 'boss', S.bossId, t, right);
+    else R.drawPortrait(face, 'char', S.charId, t, right);
+  }
+
+  _storyEnd() {
+    const S = this._story;
+    if (!S) return;
+    this._story = null;
+    $('ov-story').classList.add('hidden');
+    if (S.done) S.done();
+  }
+
+  _storyTick() {
+    const S = this._story;
+    if (!S) return;
+    const now = performance.now(), dt = Math.min(0.1, (now - S.last) / 1000);
+    S.last = now;
+    if (S.shown < S.full.length) { S.shown = Math.min(S.full.length, S.shown + dt * 48); $('st-text').textContent = S.full.slice(0, Math.floor(S.shown)); }
+    this._storyFace(now / 1000);
   }
 
   // Início de cada fase da Jornada: anúncio com o objetivo
@@ -1059,6 +1150,18 @@ export class UI {
     this._setIcon(c.dash, 'dash', slam ? 'slam' : 'dash', slam ? 'QUEDA' : 'DASH');
     if (s.dashAlt !== slam) { s.dashAlt = slam; c.dash.classList.toggle('alt', slam); }
     this._setCd(c.dash, 'dashCd', Math.max(0, Math.min(1, p.dashCd / C.dashCooldown)));
+    // Especial (arma com barra de MP): some sem arma; anel = MP que falta; cheio = brilha
+    const W = g.skills.weapon;
+    if (s.spOn !== !!W) {
+      s.spOn = !!W; c.sp.classList.toggle('hidden', !W);
+      if (W) { c.sp.style.setProperty('--sp', W.def.color); c.sp.querySelector('.sp-ic').textContent = W.def.icon; }
+    }
+    if (W) {
+      const f = g.skills.mpFrac;
+      this._setCd(c.sp, 'spCd', 1 - f);
+      const full = f >= 1;
+      if (s.spFull !== full) { s.spFull = full; c.sp.classList.toggle('full', full); }
+    }
     // Pulo: pontos = pulos no ar restantes; Guaxinim sem pulos no ar → Planar
     const air = !p.onGround;
     const glide = !!C.glide && air && p.airJumps <= 0;
@@ -1074,6 +1177,7 @@ export class UI {
 
   update() {
     const g = this.game, e = this.el, L = this._last;
+    if (this._story) this._storyTick();
     if (g.state === GS.Title) {
       if (!e.hideout.classList.contains('hidden') && g.renderer) g.renderer.drawCentered(e.coinIc, 'it.coin', performance.now() / 1000);
       e.logo.style.setProperty('--b', g.audio.pulse().toFixed(3));
@@ -1097,7 +1201,10 @@ export class UI {
       return;
     }
     this._updateControls();
-    if (g.state === GS.Playing) { this._stageFade(); if (!(g.introT > 0)) this._tutorial(); }
+    if (g.state === GS.Playing) {
+      if (g.story) { if (!$('stage-fade').classList.contains('hidden')) $('stage-fade').classList.add('hidden'); }
+      else { this._stageFade(); if (!(g.introT > 0)) this._tutorial(); }
+    }
     if ((g.showFps || g.settings.perf) && window.__fps && (this._fpsT = (this._fpsT || 0) + 1) % 30 === 0) this._perfMeter();
     if (g.sectorInfo) this._updateSector();
     const hp = Math.max(0, Math.ceil(g.hp));

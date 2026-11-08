@@ -9,6 +9,9 @@ import { pointsLeft } from './talents.js';
 
 // Novidades da versão atual (aparece uma vez por versão)
 export const CHANGELOG = [
+  'Modo história na Jornada: cada mapa é um capítulo, com cenas de diálogo e um chefe próprio',
+  'Ataque especial com barra de MP: botão ESPECIAL, dano ×3,2 (a arma não dispara mais sozinha)',
+  'Armas novas: Lâmina Meia-Lua (Coelho), Plasma de Dados (Macaco) e Ondas de Choque (Tatu)',
   'Jornada mais desafiadora a cada mapa: hordas maiores, inimigos mais fortes e veteranos dourados',
   'Atualização pelo próprio app para testadores (aviso de versão nova)',
   'Contagem 3-2-1 no início de cada fase: tudo carrega antes de você se mexer',

@@ -2,7 +2,7 @@
 // Unidades: pixels de mundo e segundos. 1 tile = 32 px.
 
 export const TILE = 32;
-export const VERSION = '0.24 teste';   // aparece na tela inicial e no feedback dos testadores
+export const VERSION = '0.25 teste';   // aparece na tela inicial e no feedback dos testadores
 export const VIEW_W = 410;          // largura visível do mundo (retrato; era 380 até a v0.17); a altura se adapta à tela
 export const CHUNK_W = 24;          // largura de um chunk em tiles
 export const CHUNK_H = 16;          // altura de um chunk em tiles (abaixo disso é chão sólido)
@@ -122,6 +122,9 @@ export const SAVE_KEY = 'neonpaws.save.v1';
 // Com a arma comprada, o personagem já começa a partida com ela disparando sozinha. Nível 5 = bônus especial.
 export const WEAPONS = {
   costs: [150, 300, 500, 800, 1200],     // Sucata para o nível 1, 2, 3, 4, 5
+  // v0.24: a arma vira ATAQUE ESPECIAL com barra de MP (estilo Grand Chase). Enche sozinha devagar e mais rápido
+  // a cada golpe que acerta e a cada abate; cheia, o botão ESPECIAL brilha. Com "Ataque automático" ligado, dispara sozinha.
+  special: { mpMax: 100, mpStart: 40, regen: 3, perHit: 4, perHitMax: 12, perKill: 3, dmgMult: 3.2, hitStop: 0.07 },
   garrasE: { char: 'gato', name: 'Garras Energizadas', icon: '≋', color: '#ff4df0', anim: 'wpn.garras',
     desc: 'Três garras de energia avançam e atravessam a horda.', max5: 'Nv 5: lança para frente e para trás.',
     cd: 1.7, cdMul: 0.93, dmg: 20, dmgPer: 8, range: 210, speed: 560, h: 40 },
@@ -131,4 +134,14 @@ export const WEAPONS = {
   martelo: { char: 'pug', name: 'Martelo de Impacto', icon: '⚒', color: '#ff9a3c', anim: 'wpn.martelo',
     desc: 'Pancada pesada à frente e onda de choque pelo chão.', max5: 'Nv 5: uma segunda onda de choque.',
     cd: 2.6, cdMul: 0.93, dmg: 34, dmgPer: 12, front: 100, wave: 230, waveDmg: 0.6, knock: 300 },
+  // v0.24 [PROPOSTA]: armas do Coelho, Macaco e Tatu (arte de armas_vfx.jpg)
+  luaE: { char: 'coelho', name: 'Lâmina Meia-Lua', icon: '☾', color: '#ff5ad8', anim: 'wpn.lua',
+    desc: 'Lâmina de energia em meia-lua: vai, atravessa a horda e volta como bumerangue.', max5: 'Nv 5: duas lâminas (frente e trás).',
+    cd: 1.9, cdMul: 0.93, dmg: 18, dmgPer: 7, range: 230, speed: 500, h: 46 },
+  plasma: { char: 'macaco', name: 'Plasma de Dados', icon: '◉', color: '#4dff7a', anim: 'wpn.plasma', boom: 'wpn.plasmaX',
+    desc: 'Esfera de plasma lançada no inimigo mais próximo; explode e atinge quem estiver em volta.', max5: 'Nv 5: explosão maior e uma segunda esfera.',
+    cd: 2.1, cdMul: 0.93, dmg: 26, dmgPer: 10, speed: 430, range: 330, r: 64 },
+  choque: { char: 'tatu', name: 'Ondas de Choque', icon: '◎', color: '#ff9a3c', anim: 'wpn.shock', end: 'wpn.shockX',
+    desc: 'Anéis de choque rolam pelo chão para os dois lados e empurram a horda.', max5: 'Nv 5: os anéis dão choque e travam os inimigos.',
+    cd: 2.4, cdMul: 0.93, dmg: 22, dmgPer: 9, range: 250, speed: 360, h: 50, knock: 260, stun: 0.6 },
 };

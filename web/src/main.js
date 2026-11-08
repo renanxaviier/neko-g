@@ -23,6 +23,7 @@ input.bindTouch({
   jumpBtn: document.getElementById('btn-jump'),
   dashBtn: document.getElementById('btn-dash'),
   attackBtn: document.getElementById('btn-attack'),
+  specialBtn: document.getElementById('btn-special'),
 });
 
 const game = new Game({ audio, input, params });

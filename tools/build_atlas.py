@@ -299,6 +299,12 @@ ANIMS = {
     'wpn.garras': (f('wpn_garras', 0, 1, 2), 14, False, (140, 40), 'mid'),
     'wpn.dados': (f('wpn_dados', 1, 2, 3, 4, 5), 14, False, (138, 60), 'mid'),
     'wpn.martelo': (f('wpn_martelo', 0, 1, 2, 3), 12, False, (190, 66), 'bottom'),
+    # v0.24: armas do Coelho (lâmina meia-lua), Macaco (plasma) e Tatu (ondas de choque) — /tmp/wt/crop.py + build_weapons.py
+    'wpn.lua': (f('wpn_lua', 0, 1), 12, True, (193, 58), 'mid'),
+    'wpn.plasma': (f('wpn_plasma', 0, 1, 2, 3), 12, True, (100, 26), 'mid'),
+    'wpn.plasmaX': (f('wpn_plasma', 4, 5), 10, False, (200, 92), 'mid'),
+    'wpn.shock': (f('wpn_shock', 0, 1, 2), 12, True, (172, 58), 'mid'),
+    'wpn.shockX': (f('wpn_shock', 3, 4), 12, False, (172, 58), 'mid'),
     **{f'menu.{c}': (f(f'menu_{c}', 0, 1, 2), 4, True, (SS * 100, 100), 'bottom')   # tamanho nativo (re-pixelizado), desenhado em escala inteira
        for c in ('gato', 'guaxinim', 'pug', 'coelho', 'macaco', 'tatu', 'corvo')},
 }
