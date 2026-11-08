@@ -10,9 +10,17 @@
 - AdMob (ID do app e do anúncio premiado) e conta no Play Console — adiados.
 - Folhas de arte: Fábrica, Torre, quadros de nado dos personagens.
 
+## Arte recebida no fim do dia (ainda não integrada)
+- `assets/concept/personagens_novos.jpg`: **Coelho Cyber**, **Macaco Cyber** e **Tatu Cyber** — pulo, pulo duplo (2 quadros), queda, aterrissagem, deslizar na parede e **agarrar a borda** (ledge grab, mecânica nova).
+  - Atenção: o rótulo "2. MACACO" está abaixo da 2ª linha; a 3ª linha mistura Tatu (pulo, bola) com uma variação do Macaco (queda com jato, aterrissagem, parede, borda). A 4ª linha é o Tatu completo.
+  - **Faltam** para serem jogáveis: parado (idle), correr, ataque, dash, dano e morte (os 3 personagens atuais têm esses quadros).
+- `assets/concept/chefoes_novos.jpg`: **Titã Sobrecarregado** (andar 3, início do salto, no ar, impacto), **Rainha da Sucata** (pairar 2, dash, agarrar parede, virar) e **Sentinela de Dados** (voo 4, teleporte saindo/voltando, descida rápida).
+  - Faltam ataque, dano e morte — dá para fazer por código (como nos chefões atuais), mas quadros próprios ficam melhores.
+
 ## Combinado para a próxima sessão
 1. **Mais regras e objetivos** na Jornada (novos tipos de fase, fase elite, eventos).
 2. **Interface de usuário melhor** (HUD e telas).
-3. **Menu do jogo melhor** (tela inicial / hub).
+3. **Menu do jogo melhor** (tela inicial / hub). Pedido do produtor: os personagens saem da tela inicial e vão para uma tela própria **"Escolher personagem"** (a tela inicial fica mais limpa).
 4. **Mapa de progressão da Jornada** (caminho visual com os mapas e fases, bifurcações).
+5. Integrar os novos personagens (quando chegarem os quadros que faltam) e os 3 novos chefões.
 - Em seguida, etapa 2 da Jornada: nível do personagem permanente + árvore de talentos.
