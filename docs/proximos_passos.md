@@ -18,10 +18,14 @@
 - `assets/concept/chefoes_novos.jpg`: **Titã Sobrecarregado** (andar 3, início do salto, no ar, impacto), **Rainha da Sucata** (pairar 2, dash, agarrar parede, virar) e **Sentinela de Dados** (voo 4, teleporte saindo/voltando, descida rápida).
   - Faltam ataque, dano e morte — dá para fazer por código (como nos chefões atuais), mas quadros próprios ficam melhores.
 
+- `assets/concept/armas_vfx.jpg`: efeitos de armas. **Fogo:** laser (8 q.), rajada com rastros (6), plasma (8), ondas de choque (6), explosão glitch (8). **Brancas:** corte de dados (6), golpe de energia com meia-lua (8), arcos elétricos (6), martelo de impacto (8), garras energizadas (6).
+  - Ideia do produtor: **armas por personagem**, como upgrade de uso exclusivo, escolhidas pela característica de cada um. Proposta inicial [PROPOSTA]: Gato → garras energizadas; Guaxinim → corte de dados / blaster glitch; Pug → martelo de impacto; Coelho → lâmina de energia (meia-lua); Macaco → laser, rajada ou plasma; Tatu → ondas de choque / arcos elétricos.
+
 ## Combinado para a próxima sessão
 1. **Mais regras e objetivos** na Jornada (novos tipos de fase, fase elite, eventos).
 2. **Interface de usuário melhor** (HUD e telas).
 3. **Menu do jogo melhor** (tela inicial / hub). Pedido do produtor: os personagens saem da tela inicial e vão para uma tela própria **"Escolher personagem"** (a tela inicial fica mais limpa).
 4. **Mapa de progressão da Jornada** (caminho visual com os mapas e fases, bifurcações).
-5. Integrar os novos personagens (quando chegarem os quadros que faltam) e os 3 novos chefões.
+5. **Armas por personagem** (desenho + implementação: compra/evolução no Esconderijo, troca o ataque básico e o efeito).
+6. Integrar os novos personagens (quando chegarem os quadros que faltam) e os 3 novos chefões.
 - Em seguida, etapa 2 da Jornada: nível do personagem permanente + árvore de talentos.
