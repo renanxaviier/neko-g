@@ -100,8 +100,8 @@ export class Fx {
     if (this._hitSfxT <= 0) { this.sfx('hit'); this._hitSfxT = 0.05; }
   }
   // Quadros de morte da folha (monstros aquáticos): x, y = âncora (centro, ou pés se o quadro for 'feet')
-  seq(anim, x, y, life, flip = 1, sc = 1, vy = 0) {
-    return this.effect('seq', { anim, x, y, life, flip, sc, vy });
+  seq(anim, x, y, life, flip = 1, sc = 1, vy = 0, vx = 0, add = false) {
+    return this.effect('seq', { anim, x, y, life, flip, sc, vy, vx, add });
   }
   kill(e) {
     const big = e.def.tier !== 'weak';

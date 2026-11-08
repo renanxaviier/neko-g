@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "917194353955",
+    "project_id": "neko-g",
+    "storage_bucket": "neko-g.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:917194353955:android:16bec733171a0475d6f096",
+        "android_client_info": {
+          "package_name": "com.nekog.game"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlEpRJjUJBZb0bq8BXOpNS5E6vRVO-5E0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -733,12 +733,67 @@ export class Renderer {
     const x = canvas.getContext('2d');
     x.clearRect(0, 0, canvas.width, canvas.height);
     if (!fr) return;
-    const k = Math.min((canvas.height * 0.86) / fr[3], (canvas.width * 0.9) / fr[2]);
-    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    let k = Math.min((canvas.height * 0.86) / fr[3], (canvas.width * 0.9) / fr[2]);
+    const crisp = fr.s === 'menu' && k >= 1;              // pixel art nativa: escala inteira, sem suavizar
+    if (crisp) k = Math.floor(k);
+    x.imageSmoothingEnabled = !crisp; x.imageSmoothingQuality = 'high';
     if (locked) x.filter = typeof locked === 'string' ? locked : 'grayscale(1) brightness(0.45)';
     const img = this._img(fr.s);
-    if (img) x.drawImage(img, fr[0], fr[1], fr[2], fr[3], canvas.width / 2 - fr[4] * k, canvas.height - 4 - fr[5] * k, fr[2] * k, fr[3] * k);
+    if (img) x.drawImage(img, fr[0], fr[1], fr[2], fr[3], Math.round(canvas.width / 2 - fr[4] * k), Math.round(canvas.height - 4 - fr[5] * k), fr[2] * k, fr[3] * k);
     x.filter = 'none';
+  }
+
+  // Palco da tela "Escolher personagem": o atual no centro (escala inteira, nítido) e os vizinhos menores
+  // e escuros dos lados. slide: deslocamento da troca (-1..1, volta a 0). items: [{ id, color, dim }].
+  drawCharStage(canvas, items, cur, t, slide) {
+    const x = canvas.getContext('2d'), W = canvas.width, H = canvas.height, n = items.length;
+    x.clearRect(0, 0, W, H);
+    const dpr = canvas.clientWidth ? W / canvas.clientWidth : 2;
+    // pixels da tela por pixel da arte: inteiro (nítido) e no máximo ~2,5 px CSS (personagem não fica enorme)
+    const S = Math.max(2, Math.min(Math.round(2.5 * dpr), Math.floor(Math.min((H * 0.6) / 70, (W * 0.42) / 75))));
+    const Sn = Math.max(1, Math.round(S * 0.55));
+    const cx = W / 2, base = Math.round(H * 0.9), gap = W * 0.37;
+    const mid = items[cur], col = mid.color;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2.4);
+    x.imageSmoothingEnabled = false;
+    const draw = (d) => {
+      const it = items[(cur + d + n * 4) % n];
+      const fr = this._frame('menu.' + it.id, t + d * 0.31);
+      if (!fr) return null;
+      const off = Math.abs(d + slide), u = Math.min(1, off);
+      const k = S + (Sn - S) * u, still = slide === 0;
+      const px = cx + (d + slide) * gap;
+      x.globalAlpha = Math.max(0, 1 - 0.6 * u - 0.4 * Math.max(0, off - 1));
+      x.filter = u > 0.5 ? 'brightness(0.45) saturate(0.6)' : it.dim || 'none';
+      const kk = still ? Math.round(k) : k;
+      x.drawImage(this._img(fr.s), fr[0], fr[1], fr[2], fr[3], still ? Math.round(px - fr[4] * kk) : px - fr[4] * kk, base - fr[5] * kk, fr[2] * kk, fr[3] * kk);
+      x.filter = 'none'; x.globalAlpha = 1;
+      return fr;
+    };
+    for (const d of [-2, 2, -1, 1]) draw(d);
+    // Luz do palco: facho de cima, brilho no chão e pixels subindo do pedestal (cor do personagem)
+    x.globalCompositeOperation = 'lighter';
+    const fx = cx + slide * gap;
+    const beam = x.createLinearGradient(0, 0, 0, base);
+    beam.addColorStop(0, col + '00'); beam.addColorStop(0.75, col + '38'); beam.addColorStop(1, col + '00');
+    x.fillStyle = beam;
+    x.beginPath(); x.moveTo(fx - W * 0.08, 0); x.lineTo(fx + W * 0.08, 0); x.lineTo(fx + W * 0.22, base - S * 6); x.lineTo(fx - W * 0.22, base - S * 6); x.fill();
+    const gl = x.createRadialGradient(fx, base - S * 8, 0, fx, base - S * 8, S * 44);
+    gl.addColorStop(0, col + (pulse > 0.5 ? '66' : '55')); gl.addColorStop(1, col + '00');
+    x.fillStyle = gl;
+    x.save(); x.translate(fx, base - S * 8); x.scale(1, 0.32); x.translate(-fx, -(base - S * 8));
+    x.fillRect(fx - S * 44, base - S * 52, S * 88, S * 88); x.restore();
+    x.fillStyle = col;
+    for (let k = 0; k < 18; k++) {
+      const ph = (t * (0.22 + (k % 5) * 0.04) + k / 18) % 1;
+      const px = Math.round(fx + Math.sin(k * 12.9898) * S * 26);
+      const py = Math.round(base - S * 9 - ph * H * 0.62);
+      x.globalAlpha = (1 - ph) * (k % 3 ? 0.55 : 0.9);
+      const sz = k % 4 ? S : S * 2;
+      x.fillRect(px, py, sz, sz);
+    }
+    x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
+    draw(0);
   }
 
   // Sprite centralizado num canvas da interface (ex.: emblema de Level Up)
@@ -822,6 +877,9 @@ export class Renderer {
     if (g.state !== 'title') g.juice.drawScreen(ctx, this.canvas, W, H, s, left, top, q);
     if (g.state !== 'title') this._indicators(ctx, left, top, s, W, H);
     if (g.portal && g.state !== 'title') this._portalArrow(ctx, g.portal, left, top, s, W, H, g.time);
+    else if (g.stageInfo && g.stageInfo.type === 'elite' && g.state !== 'title') {   // seta dourada para o elite
+      for (const e of g.enemies.pool) if (e.active && e.elite) { this._portalArrow(ctx, { x: e.cx, y: e.cy + 32, color: '#ffd84d', label: 'ELITE' }, left, top, s, W, H, g.time); break; }
+    }
     if (g.warp) this._warpOverlay(ctx, g.warp, W, H);
     if (g.hurtFlash > 0) { ctx.fillStyle = `rgba(255,30,70,${Math.min(0.25, g.hurtFlash)})`; ctx.fillRect(0, 0, W, H); }
     if (this.debug) this._debug(ctx, realDt);
@@ -876,7 +934,7 @@ export class Renderer {
     ctx.rotate(a); ctx.fillStyle = P.color;
     ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(4, -7); ctx.lineTo(4, 7); ctx.closePath(); ctx.fill();
     ctx.rotate(-a); ctx.font = 'bold 9px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
-    ctx.fillText('PORTAL', 0, 30);
+    ctx.fillText(P.label || 'PORTAL', 0, 30);
     ctx.restore();
   }
 
@@ -999,10 +1057,23 @@ export class Renderer {
           ctx.fillStyle = '#ff4df0'; ctx.beginPath(); ctx.arc(mx + facing * len, my, 4, 0, Math.PI * 2); ctx.fill();
         }
         if (e.def.boss) { this._drawBoss(ctx, e, fr, x, y, facing, white, t); continue; }
-        if (e.def.flying) this._drawFrame(ctx, fr, x + e.w / 2, y + e.h / 2, facing, white);
-        else this._drawFrame(ctx, fr, x + e.w / 2, y + e.h, facing, white, tele ? 1.06 : 1, tele ? 0.94 : 1);
+        let ek = 1;
+        if (e.elite) {                              // elite (Caçada): aura dourada pulsando e um pouco maior
+          ek = 1.18;
+          const pr = 0.5 + 0.5 * Math.sin(t * 6);
+          ctx.save(); ctx.globalCompositeOperation = 'lighter';
+          ctx.globalAlpha = 0.28 + 0.2 * pr; ctx.fillStyle = '#ffd84d';
+          ctx.beginPath(); ctx.ellipse(x + e.w / 2, y + e.h / 2, e.w * 0.95 + 4 * pr, e.h * 0.85 + 4 * pr, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+        if (e.def.flying) this._drawFrame(ctx, fr, x + e.w / 2, y + e.h / 2, facing, white, ek, ek);
+        else this._drawFrame(ctx, fr, x + e.w / 2, y + e.h, facing, white, (tele ? 1.06 : 1) * ek, (tele ? 0.94 : 1) * ek);
         ctx.globalAlpha = 1;
-        if (e.def.tier !== 'weak' && !e.def.prop && !e.def.boss && e.hp < e.maxHp) {
+        if (e.elite) {                              // estrela + barra de vida sempre visível
+          ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(x - 4, y - 14, e.w + 8, 4);
+          ctx.fillStyle = '#ffd84d'; ctx.fillRect(x - 4, y - 14, (e.w + 8) * Math.max(0, e.hp / e.maxHp), 4);
+          ctx.font = 'bold 12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('★', x + e.w / 2, y - 18);
+        } else if (e.def.tier !== 'weak' && !e.def.prop && !e.def.boss && e.hp < e.maxHp) {
           ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x, y - 9, e.w, 3);
           ctx.fillStyle = e.def.glow; ctx.fillRect(x, y - 9, e.w * Math.max(0, e.hp / e.maxHp), 3);
         }
@@ -1192,9 +1263,9 @@ export class Renderer {
         const a = ATLAS[e.anim];
         if (a && this._img(a.s)) {
           const fr = a.frames[Math.min(a.frames.length - 1, Math.floor((1 - k) * a.frames.length))];
-          ctx.globalCompositeOperation = 'source-over';
+          ctx.globalCompositeOperation = e.add ? 'lighter' : 'source-over';
           ctx.globalAlpha = Math.min(1, k * 4);
-          this._drawFrame(ctx, fr, e.x, e.y + e.vy * (1 - k) * e.max, e.flip, false, e.sc, e.sc);
+          this._drawFrame(ctx, fr, e.x + (e.vx || 0) * (1 - k) * e.max, e.y + e.vy * (1 - k) * e.max, e.flip, false, e.sc, e.sc);
           ctx.globalCompositeOperation = 'lighter';
         }
         continue;

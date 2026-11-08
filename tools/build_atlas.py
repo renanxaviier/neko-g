@@ -277,7 +277,11 @@ ANIMS = {
     'mecha.hurt':     (f('aq_mecha', 6, 7), 8, True, (218, 80), 'feet'),
     'mecha.death':    (f('aq_mecha', 8, 9, 10), 1, False, (218, 80), 'feet'),
     # ---- v0.15: personagens no pedestal (tela Escolher personagem; quadros de tools/build_menu.py) ----
-    **{f'menu.{c}': (f(f'menu_{c}', 0, 1, 2), 4, True, (100, 16.2 if c == 'coelho' else 32), 'bottom')
+    # v0.16: armas exclusivas dos personagens (assets/concept/armas_vfx.jpg, tools/build_weapons.py)
+    'wpn.garras': (f('wpn_garras', 0, 1, 2), 14, False, (140, 40), 'mid'),
+    'wpn.dados': (f('wpn_dados', 1, 2, 3, 4, 5), 14, False, (138, 60), 'mid'),
+    'wpn.martelo': (f('wpn_martelo', 0, 1, 2, 3), 12, False, (190, 66), 'bottom'),
+    **{f'menu.{c}': (f(f'menu_{c}', 0, 1, 2), 4, True, (SS * 100, 100), 'bottom')   # tamanho nativo (re-pixelizado), desenhado em escala inteira
        for c in ('gato', 'guaxinim', 'pug', 'coelho', 'macaco', 'tatu', 'corvo')},
 }
 
@@ -294,6 +298,8 @@ def anchor(img, mode, body_h=None):
     ys, xs = np.mgrid[0:h, 0:w]
     if mode == 'bottom':                   # base do quadro, no meio (pedestais da tela de personagens)
         return w / 2, float(h)
+    if mode == 'mid':                      # centro do quadro (efeitos de armas: todos os quadros alinhados)
+        return w / 2, h / 2
     if mode == 'top':                      # pés = topo + altura do corpo (ignora jatos/efeitos abaixo)
         top = a[: max(1, int(body_h * 0.45))]
         ys2, xs2 = np.mgrid[0:top.shape[0], 0:w]
@@ -383,7 +389,8 @@ for sh, lst in sheets.items():
         f = [px, py, im.width, im.height, round(ax, 1), round(ay, 1)]
         if ss_of(name) != SS: f.append(ss_of(name))
         a['frames'].append(f)
-    atlas.save(f'/home/claude/web/assets/sprites/{sh}.webp', 'WEBP', quality=90, method=6)
+    if sh == 'menu': atlas.save(f'/home/claude/web/assets/sprites/{sh}.webp', 'WEBP', lossless=True, method=6)   # pixel art nativa: sem perdas
+    else: atlas.save(f'/home/claude/web/assets/sprites/{sh}.webp', 'WEBP', quality=90, method=6)
     sizes[sh] = atlas.size
     assert H <= 4096, (sh, H)
 

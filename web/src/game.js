@@ -1,7 +1,7 @@
 // Gerenciador da partida: máquina de estados (GDD 10.1), vida/i-frames, XP e nível, revive (1 por partida), estatísticas e save.
 
-import { RUN, TILE, xpForLevel, SAVE_KEY, WATER, JOURNEY } from './config.js';
-import { journeyMap } from './journey.js';
+import { RUN, TILE, xpForLevel, SAVE_KEY, WATER, JOURNEY, WEAPONS } from './config.js';
+import { journeyMap, starCount } from './journey.js';
 import { Rng } from './rng.js';
 import { World } from './world.js';
 import { Player } from './player.js';
@@ -87,7 +87,9 @@ export class Game {
     this.level = 1; this.xp = 0; this.xpNeed = xpForLevel(1); this.pendingLevels = 0;
     this.rerolls = 2; this.bans = 1;                  // por partida (o Esconderijo pode aumentar no futuro)
     this.areaMult = 1; this.vampLvl = 0;
-    this.hasRevived = false; this.isDying = false; this.dyingT = 0; this.deathAnim = 0;
+    this.hasRevived = false; this.usedRevive = false; this.isDying = false; this.dyingT = 0; this.deathAnim = 0;
+    this.batteries = 0; this.elitesKilled = 0; this.mod = {};
+    this.map = null; this.stageInfo = null; this.stage = 0;
     this.iframes = 0; this.hurtFlash = 0; this.hitStop = 0;
     this.reviveT = 0; this.adPlaying = false; this.adT = 0;
     this.camera.snap(this.player);
@@ -213,10 +215,19 @@ export class Game {
       this._vampT = this.time;
       this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.003 * this.vampLvl);
     }
-    const d = e.def;
-    const xp = Math.round(d.xp * (1 + 0.25 * (this.runTime / 60)));          // baterias valem mais com o tempo
+    const d = e.def, M = this.mod;
+    const xp = Math.round(d.xp * (1 + 0.25 * (this.runTime / 60)) * (M.xp || 1) * (e.elite ? 3 : 1));   // baterias valem mais com o tempo
     this.pickups.spawn(PK.BATTERY, e.cx, e.cy, xp);                          // 100% soltam bateria
-    if (this.rng.chance(d.scrap)) this.pickups.spawn(PK.SCRAP, e.cx, e.cy, d.tier === 'tank' ? 5 : d.tier === 'medium' ? 2 : 1);
+    if (this.rng.chance(d.scrap * (M.scrap || 1))) this.pickups.spawn(PK.SCRAP, e.cx, e.cy, d.tier === 'tank' ? 5 : d.tier === 'medium' ? 2 : 1);
+    if (e.elite) {                                                            // elite: mais Sucata, uma cura e destaque
+      this.elitesKilled++;
+      for (let i = 0; i < JOURNEY.elite.scrap; i++) this.pickups.spawn(PK.SCRAP, e.cx + (i - 1.5) * 8, e.cy, 2);
+      this.pickups.spawn(PK.HEALTH, e.cx, e.cy - 6, 0.15);
+      this.fx.effect('ring', { x: e.cx, y: e.cy, r: 6, maxR: 80, color: '#ffd84d', life: 0.5 });
+      if (this.juice) this.juice.shock(e.cx, e.cy, 70);
+      const st = this.stageInfo;
+      if (this.ui && st && st.type === 'elite') this.ui.showBiome({ name: 'ELITE DERROTADO!', color: '#ffd84d' }, `★ ${Math.min(st.goal, this.stageProgress())}/${st.goal}`);
+    }
     const hd = RUN.healthDrop;
     const hpChance = hd.chance[d.tier] * (this.hp / this.maxHp < hd.lowHp ? hd.lowHpMult : 1);
     if (this.rng.chance(hpChance)) this.pickups.spawn(PK.HEALTH, e.cx, e.cy, hd.heal[d.tier]);
@@ -252,6 +263,8 @@ export class Game {
     this.biome = info.bi; this.runStats.biomes.add(info.bi);
     this.spawner.bossIdx = m;                          // o chefe do mapa segue a ordem dos chefões
     this.mapDoneT = 0;
+    this.mod = info.mod || {};                         // modificador do mapa (Enxame, Blindados…)
+    this.skills.applyPassives();
     this._enterStage(0);
   }
 
@@ -260,10 +273,11 @@ export class Game {
     this.stage = s; this.stageInfo = st;
     this.sectorTime = 0; this.sectorCleared = false; this.portal = null; this.stageDone = false;
     this.stageKills0 = this.kills; this.stageX0 = this.player.cx;
-    const n = this.map.n + s * JOURNEY.stageDiff;
+    this.stageBat0 = this.batteries; this.stageElite0 = this.elitesKilled; this.eliteT = JOURNEY.elite.first;
+    const n = this.map.n + s * JOURNEY.stageDiff, M = this.mod;
     this.diffN = n;
-    this.sectorMult = 1 + 0.12 * n;
-    this.enemyDamageMult = 1 + 0.04 * n;
+    this.sectorMult = (1 + 0.12 * n) * (M.hp || 1);
+    this.enemyDamageMult = (1 + 0.04 * n) * (M.dmg || 1);
     this.sectorBossAt = st.type === 'boss' ? JOURNEY.bossDelay : Infinity;
     if (st.type === 'reach') this._placeExit(st.goal);
     if (this.ui) this.ui.showStage(this.map, s, st, last);
@@ -276,6 +290,8 @@ export class Game {
     if (st.type === 'survive') return this.sectorTime;
     if (st.type === 'hunt') return this.kills - this.stageKills0;
     if (st.type === 'reach') return this.portal && this.portal.exit ? Math.max(0, st.goal - Math.abs(this.portal.x - this.player.cx)) : st.goal;
+    if (st.type === 'elite') return this.elitesKilled - this.stageElite0;
+    if (st.type === 'collect') return this.batteries - this.stageBat0;
     return 0;
   }
   stageFrac() { const st = this.stageInfo; return !st || st.type === 'boss' ? 1 : Math.min(1, this.stageProgress() / st.goal); }
@@ -298,6 +314,12 @@ export class Game {
     const st = this.stageInfo;
     if (this.mapDoneT > 0) { if ((this.mapDoneT -= dt) <= 0) this._journeyWin(); return; }
     if (!st || this.stageDone || st.type === 'boss' || st.type === 'reach') return;
+    if (st.type === 'elite' && (this.eliteT -= dt) <= 0) {      // um elite por vez; o próximo vem alguns segundos depois
+      this.eliteT = 1;
+      let alive = false;
+      for (const e of this.enemies.pool) if (e.active && e.elite) { alive = true; break; }
+      if (!alive && this.spawner.spawnElite()) this.eliteT = JOURNEY.elite.every;
+    }
     if (this.stageProgress() >= st.goal) {
       this.stageDone = true; this.sectorCleared = true;
       if (this.ui) this.ui.showBiome({ name: 'FASE CONCLUÍDA!', color: this.map.biome.color }, 'ENTRE NO PORTAL');
@@ -310,10 +332,16 @@ export class Game {
   _journeyWin() {
     const m = this.map.n, k = this.mapReplay ? JOURNEY.replayMult : 1;
     const bonusScrap = Math.round((JOURNEY.clearScrap.base + JOURNEY.clearScrap.perMap * m) * k);
-    const bonusCoins = this.mapReplay ? 0 : JOURNEY.clearCoins;
+    // Estrelas: vencer · sem revive · vida alta no fim. Cada estrela nova (1ª vez) dá Cyber-Moedas.
+    const stars = 1 | (this.usedRevive ? 0 : 2) | (this.hp / this.maxHp >= JOURNEY.starHp ? 4 : 0);
+    const js = this.meta.jStars || (this.meta.jStars = {});
+    const old = js[m] || 0, fresh = stars & ~old;
+    js[m] = old | stars;
+    const starCoins = starCount(fresh) * JOURNEY.starCoins;
+    const bonusCoins = (this.mapReplay ? 0 : JOURNEY.clearCoins) + starCoins;
     this.meta.cyberCoins += bonusCoins;
     this.meta.jMax = Math.max(this.meta.jMax || 0, m + 1);
-    this.gameOver({ victory: true, bonusScrap, bonusCoins });
+    this.gameOver({ victory: true, bonusScrap, bonusCoins, stars, newStars: fresh, starCoins });
   }
 
   // Liga/desliga a água: física do jogador, dos inimigos e das baterias, efeito na tela e som abafado
@@ -461,6 +489,19 @@ export class Game {
     return true;
   }
 
+  // Arma exclusiva: compra o próximo nível com Sucata (o personagem precisa ser seu)
+  buyWeapon(wid) {
+    const D = WEAPONS[wid], m = this.meta;
+    if (!D || !m.chars.includes(D.char)) return false;
+    const w = m.weapons || (m.weapons = {}), lvl = w[wid] || 0;
+    const cost = WEAPONS.costs[lvl];
+    if (cost === undefined || m.scrap < cost) return false;
+    m.scrap -= cost; w[wid] = lvl + 1;
+    this.audio.sfx('buy');
+    saveGame(m);
+    return true;
+  }
+
   unlockChar(id) {
     const ch = CHARS[id];
     if (!ch || this.meta.chars.includes(id) || this.meta.cyberCoins < ch.price) return false;
@@ -543,6 +584,7 @@ export class Game {
   revive(watchedAd) {
     if (!watchedAd || this.state !== GS.Revive || this.hasRevived) return false;
     this.hasRevived = !this.isDev;                      // apenas 1 por partida (conta DEV: sem limite)
+    this.usedRevive = true;                             // perde a estrela "sem revive" da Jornada
     this.hp = Math.ceil(this.maxHp * RUN.reviveHP);     // 50% do HP
     this.player.revive();
     this.iframes = RUN.reviveInvuln;                    // 3 s de invencibilidade
@@ -686,7 +728,8 @@ export class Game {
     if (!journey && this.runTime > this.meta.bestTime) { this.meta.bestTime = this.runTime; result.best = true; }
     if (journey) {
       Object.assign(result, { map: this.map.num, mapIdx: this.map.n, stage: this.stage + 1, stages: this.map.stages.length, replay: this.mapReplay,
-        bonusScrap: opt.bonusScrap || 0, bonusCoins: opt.bonusCoins || 0 });
+        bonusScrap: opt.bonusScrap || 0, bonusCoins: opt.bonusCoins || 0, stars: opt.stars || 0, newStars: opt.newStars || 0,
+        starCoins: opt.starCoins || 0, allStars: (this.meta.jStars || {})[this.map.n] || 0, mod: this.map.mod });
       result.next = opt.victory ? { mode: 'journey', map: this.map.n + 1 } : { mode: 'journey', map: this.map.n };
     } else result.next = { mode: 'endless' };
     result.sector = this.sector + 1; result.sectorName = this.sectorInfo.biome.name; result.sectorColor = this.sectorInfo.biome.color;
@@ -729,7 +772,7 @@ function loadSave() {
 
 // Monta o save a partir de um objeto (local ou vindo da nuvem), completando campos que faltam.
 export function buildMeta(raw) {
-  const base = { v: 1, rev: 0, scrap: 0, cyberCoins: 0, bestTime: 0, runs: 0, chars: ['gato'], selected: 'gato', nick: '', owner: '', jMax: 0, upgrades: { hp: 0, speed: 0, damage: 0, magnet: 0, luck: 0, crit: 0 } };
+  const base = { v: 1, rev: 0, scrap: 0, cyberCoins: 0, bestTime: 0, runs: 0, chars: ['gato'], selected: 'gato', nick: '', owner: '', jMax: 0, jStars: {}, weapons: {}, upgrades: { hp: 0, speed: 0, damage: 0, magnet: 0, luck: 0, crit: 0 } };
   const data = raw && typeof raw === 'object' ? { ...base, ...raw, upgrades: { ...base.upgrades, ...(raw.upgrades || {}) } } : { ...base, upgrades: { ...base.upgrades } };
   // Multiplicadores calculados (não vão para o arquivo de save)
   for (const k of ['hpMult', 'speedMult', 'dashMult', 'damageMult', 'magnetMult', 'rareChance', 'critChance', 'critMult']) {

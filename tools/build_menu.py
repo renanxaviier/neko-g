@@ -27,9 +27,18 @@ def clean_pug(S, rect):
     return out
 
 
+# A arte é pixel art ampliada ~4,5x e borrada pelo JPG. Recupera a grade original (1 cor por pixel da arte):
+# o jogo desenha esses quadros com escala inteira e sem suavização, então ficam nítidos em qualquer tela.
+import sys
+sys.path.insert(0, '/home/claude/tools')
+from repix import repix
+
 for cid, (S, cols, y0, y1) in ROWS.items():
+    grid = None
     for i, (x0, x1) in enumerate(cols):
         src = clean_pug(S, (x0, y0, x1, y1)) if cid == 'pug' else S
         im = cut(src, (x0, y0, x1, y1))
-        im.save(f'/tmp/ext/menu_{cid}_{i}.png')
-        print(cid, i, im.size)
+        im.save(f'/tmp/ext/menu_{cid}_{i}_hd.png')
+        px, grid = repix(im, grid)
+        px.save(f'/tmp/ext/menu_{cid}_{i}.png')
+        print(cid, i, im.size, '->', px.size, 'grade', [round(g, 2) for g in grid])

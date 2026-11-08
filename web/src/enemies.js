@@ -95,6 +95,7 @@ export class Enemies {
     e.flash = 0; e.stun = 0; e.droneCd = 0; e.fireCd = 0; e.facing = 1;
     e.lockX = 0; e.lockY = 0;
     e.anim = null; e.beam = null; e.threadY = 0; e.k = 0; e.lastPh = 0; e.enraged = false;
+    e.elite = false;
     e.cloak = false; e.tongue = 0; e.hopT = 0; e.burst = 0; e.lockX = 0; e.boomCd = 0; e.hurtT = 0; e.hurtAt = -9; e.hitDone = false; e._tr = null;
     this.count++;
     return e;
@@ -775,8 +776,9 @@ export class Spawner {
     this._miniBoss();
     this.timer -= dt;
     if (this.timer > 0) return;
-    this.timer = Math.max(0.55, 2.6 - 0.11 * L.n - 1.1 * L.p);                 // setor 1: 2,6 s → 1,5 s
-    const alive = Math.min(70, Math.round(6 + 2.2 * L.n + L.p * (8 + 1.4 * L.n)));   // setor 1: 6 → 14 · setor 6: 17 → 32
+    const M = g.mod || {};                                                     // modificador do mapa (Jornada)
+    this.timer = Math.max(0.55, 2.6 - 0.11 * L.n - 1.1 * L.p) * (M.rate || 1);  // setor 1: 2,6 s → 1,5 s
+    const alive = Math.min(80, Math.round((6 + 2.2 * L.n + L.p * (8 + 1.4 * L.n)) * (M.alive || 1)));   // setor 1: 6 → 14 · setor 6: 17 → 32
     if (g.enemies.count >= alive * (g.boss ? 0.5 : 1)) return;                // com chefe em campo, metade da horda
     this._spawnGroup(L);
   }
@@ -840,6 +842,28 @@ export class Spawner {
     return null;
   }
 
+  // Jornada, fase "Caçada de elite": um inimigo médio/tanque do cenário com muito mais vida, aura dourada e seta
+  spawnElite() {
+    const g = this.game, rng = g.rng, p = g.player, view = g.camera.view, L = this.level();
+    const R = SECTOR_ROSTER[biomeAt(Math.floor(p.cx / (TILE * CHUNK_W))).id] || SECTOR_ROSTER.distrito;
+    const pool = [...(R.medium || []), ...(R.tank || [])].map((o) => o[0]).filter((id) => ENEMY_TYPES[id] && !ENEMY_TYPES[id].boss);
+    if (!pool.length) return null;
+    const typeId = pool[rng.int(0, pool.length)], def = ENEMY_TYPES[typeId];
+    const hpMult = (1 + 0.1 * L.n) * (1 + 0.6 * L.cyc) * JOURNEY.elite.hp * ((g.mod && g.mod.hp) || 1);
+    let e = null;
+    for (const s of [p.input.moveDir || 1, -(p.input.moveDir || 1)]) {
+      const x = s > 0 ? view.right + 40 : view.left - 40;
+      if (def.flying) { e = g.enemies.spawn(typeId, x - def.w / 2, Math.min(-def.h - 40, p.cy - 60), hpMult); break; }
+      const sy = g.world.surfaceNear(Math.floor(x / TILE), p.bottom, Math.ceil(def.h / TILE));
+      if (sy !== null) { e = g.enemies.spawn(typeId, x - def.w / 2, sy - def.h - 0.5, hpMult); break; }
+    }
+    if (!e) return null;
+    e.elite = true;
+    if (g.ui) g.ui.showBiome({ name: `${def.name.toUpperCase()} ELITE`, color: '#ffd84d' }, '★ ALVO DA CAÇADA ★', true);
+    g.audio.sfx('alarm');
+    return e;
+  }
+
   _spawnGroup(L) {
     const g = this.game, rng = g.rng, p = g.player, view = g.camera.view;
     const typeId = pickType(rng, L, biomeAt(Math.floor(p.cx / (TILE * CHUNK_W))).id);
@@ -850,7 +874,7 @@ export class Spawner {
     const ahead = p.input.moveDir || (rng.chance(0.5) ? 1 : -1);
     const side = rng.chance(0.6) ? ahead : -ahead;
     const fromTop = def.flying && rng.chance(0.3);
-    const hpMult = (1 + 0.1 * L.n) * (1 + 0.3 * L.p) * (1 + 0.6 * L.cyc);     // sobe com o setor e ao longo dele
+    const hpMult = (1 + 0.1 * L.n) * (1 + 0.3 * L.p) * (1 + 0.6 * L.cyc) * ((g.mod && g.mod.hp) || 1);   // sobe com o setor e ao longo dele
 
     for (let i = 0; i < n; i++) {
       const off = 40 + i * 28 + rng.range(0, 30);

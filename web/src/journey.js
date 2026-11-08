@@ -12,6 +12,8 @@ export const STAGE_TYPES = {
   survive: { icon: '⏱', label: 'SOBREVIVA' },
   hunt: { icon: '☠', label: 'DERROTE' },
   reach: { icon: '➜', label: 'CHEGUE À SAÍDA' },
+  elite: { icon: '★', label: 'CAÇADA DE ELITE' },
+  collect: { icon: '⚡', label: 'COLETE G BATTY' },
   boss: { icon: '⚠', label: 'DERROTE O CHEFE' },
 };
 
@@ -35,24 +37,33 @@ export function journeyMap(m) {
   const id = order[m % L];
   const bi = BIOMES.findIndex((b) => b.id === id);
   const rng = new Rng(hash(0x3c6ef372, m));
+  const types = m < 1 ? ['survive', 'hunt', 'reach'] : ['survive', 'hunt', 'reach', 'elite', 'collect'];
+  let mod = null;
+  if (m >= J.modFrom) { const ks = Object.keys(J.mods); const k = ks[new Rng(hash(0x9b05688c, m)).int(0, ks.length)]; mod = { id: k, ...J.mods[k] }; }
   const stages = [];
   let last = '';
   for (let s = 0; s < J.stagesPerMap; s++) {
     let type;
     if (m === 0 && s === 0) type = 'survive';             // primeira fase do jogo: a mais simples
-    else { const pool = ['survive', 'hunt', 'reach'].filter((t) => t !== last); type = pool[rng.int(0, pool.length)]; }
+    else { const pool = types.filter((t) => t !== last); type = pool[rng.int(0, pool.length)]; }
     last = type;
     stages.push(stageGoal(type, s, m));
   }
   stages.push({ type: 'boss', goal: 1 });
-  return { n: m, num: m + 1, cycle, biome: BIOMES[bi], bi, stages, last: false, journey: true };
+  return { n: m, num: m + 1, cycle, biome: BIOMES[bi], bi, stages, mod, last: false, journey: true };
 }
 
 function stageGoal(type, s, m) {
   if (type === 'survive') return { type, goal: J.survive.base + J.survive.perStage * s };
   if (type === 'hunt') return { type, goal: Math.min(J.hunt.max, Math.round((J.hunt.base + J.hunt.perStage * s) * (1 + J.hunt.perMap * m))) };
+  if (type === 'elite') return { type, goal: Math.min(J.elite.max, Math.floor(J.elite.base + J.elite.perStage * s)) };
+  if (type === 'collect') return { type, goal: Math.min(J.collect.max, Math.round((J.collect.base + J.collect.perStage * s) * (1 + J.collect.perMap * m))) };
   return { type, goal: J.reach.base + J.reach.perStage * s };
 }
+
+// Estrelas (bits): 1 = venceu · 2 = sem revive · 4 = vida ≥ JOURNEY.starHp no fim
+export const starCount = (bits) => (bits & 1) + ((bits >> 1) & 1) + ((bits >> 2) & 1);
+export const starText = (bits) => [1, 2, 4].map((b) => (bits & b ? '★' : '☆')).join('');
 
 // Texto curto do objetivo (faixa do setor e anúncio da fase)
 export function goalText(st, progress) {
@@ -60,6 +71,8 @@ export function goalText(st, progress) {
   if (st.type === 'survive') { const left = Math.max(0, Math.ceil(st.goal - progress)); return `${T.icon} ${T.label} ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`; }
   if (st.type === 'hunt') return `${T.icon} ${Math.min(st.goal, Math.floor(progress))}/${st.goal}`;
   if (st.type === 'reach') return `${T.icon} SAÍDA ${Math.max(0, Math.round((st.goal - progress) / 32))} m`;
+  if (st.type === 'elite') return `${T.icon} ELITE ${Math.min(st.goal, Math.floor(progress))}/${st.goal}`;
+  if (st.type === 'collect') return `${T.icon} G BATTY ${Math.min(st.goal, Math.floor(progress))}/${st.goal}`;
   return `${T.icon} CHEFE`;
 }
 
@@ -67,5 +80,7 @@ export function goalIntro(st) {
   if (st.type === 'survive') return `SOBREVIVA ${st.goal} SEGUNDOS`;
   if (st.type === 'hunt') return `DERROTE ${st.goal} INIMIGOS`;
   if (st.type === 'reach') return `CHEGUE À SAÍDA (${Math.round(st.goal / 32)} m) · siga a seta`;
+  if (st.type === 'elite') return `CAÇADA: DERROTE ${st.goal} ELITES ★ · siga a seta dourada`;
+  if (st.type === 'collect') return `COLETE ${st.goal} G BATTY`;
   return 'O CHEFE ESTÁ CHEGANDO';
 }

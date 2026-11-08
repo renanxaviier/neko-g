@@ -1,6 +1,6 @@
 // Skills ativas (disparo automático por timer) e passivas, níveis 1–8, 4 + 4 slots, evoluções e sorteio das cartas.
 
-import { SKILL_LIMITS, LIMITS } from './config.js';
+import { SKILL_LIMITS, LIMITS, WEAPONS } from './config.js';
 
 const MAX = SKILL_LIMITS.maxLevel;
 
@@ -92,6 +92,13 @@ export class Skills {
     for (const b of this.booms) b.active = false;
     this.teslaR = 0;
     for (const f of this.fire) f.active = false;
+    // Arma exclusiva do personagem (comprada na tela de personagens): dispara sozinha
+    const g = this.game, wid = g.char && g.char.weapon, wl = wid ? ((g.meta.weapons || {})[wid] || 0) : 0;
+    this.weapon = wl ? { id: wid, lvl: wl, t: 1.2, def: WEAPONS[wid] } : null;
+    this.swipes = this.swipes || Array.from({ length: 6 }, () => ({ active: false, hit: new Set() }));
+    for (const w of this.swipes) w.active = false;
+    this.waves = this.waves || Array.from({ length: 6 }, () => ({ active: false, hit: new Set() }));
+    for (const w of this.waves) w.active = false;
     this.droneCount = 0;
     this._trailX = null;
     for (const id of [].concat(startSkills || [])) this.gain(id);
@@ -114,7 +121,7 @@ export class Skills {
     const g = this.game;
     const ima = this.passives.get('ima') || 0;
     g.magnetMult = (1 + 0.2 * ima) * (this.evolved.has('drones') ? 1.5 : 1) * g.meta.magnetMult * (g.char ? g.char.magnetMult : 1);
-    g.cdMult = Math.pow(0.94, this.passives.get('resfriamento') || 0);
+    g.cdMult = Math.pow(0.94, this.passives.get('resfriamento') || 0) * ((g.mod && g.mod.cd) || 1);   // Sobrecarga (Jornada)
     const turbo = 1 + 0.05 * (this.passives.get('turbo') || 0);
     g.player.speedMult = turbo * g.meta.speedMult;
     g.player.dashMult = turbo * g.meta.dashMult;
@@ -167,10 +174,126 @@ export class Skills {
     this.teslaPulse = Math.max(0, this.teslaPulse - dt);
     this._stepBooms(dt);
 
+    if (this.weapon) this._weaponStep(dt);
     this._drones(dt);
     this._rastro(dt);
     this._stepShots(dt);
     this._stepFire(dt);
+  }
+
+  // ---------------- Armas exclusivas (v0.16) ----------------
+  _weaponStep(dt) {
+    const W = this.weapon, D = W.def, g = this.game;
+    this._stepSwipes(dt); this._stepWaves(dt);
+    if ((W.t -= dt) > 0) return;
+    const near = this._nearestDist();
+    if (near > 300) { W.t = 0.25; return; }            // ninguém perto: espera (não gasta o golpe no vazio)
+    W.t = D.cd * Math.pow(D.cdMul, W.lvl - 1) * g.cdMult;
+    const dmg = (D.dmg + D.dmgPer * (W.lvl - 1)) * g.damageMult;
+    if (W.id === 'garrasE') this._wGarras(D, W.lvl, dmg);
+    else if (W.id === 'corteDados') this._wDados(D, W.lvl, dmg);
+    else if (W.id === 'martelo') this._wMartelo(D, W.lvl, dmg);
+  }
+
+  _nearestDist() {
+    const p = this.game.player;
+    const near = this.game.enemies.grid.query(p.cx - 300, p.cy - 300, p.cx + 300, p.cy + 300, this._near);
+    let best = 1e9;
+    for (let i = 0; i < near.length; i++) { const e = near[i]; if (e.active && !e.def.prop) best = Math.min(best, Math.abs(e.cx - p.cx) + Math.abs(e.cy - p.cy) * 0.5); }
+    return best;
+  }
+
+  // Garras Energizadas (Gato): três garras que avançam atravessando tudo
+  _wGarras(D, lvl, dmg) {
+    const g = this.game, p = g.player, dirs = lvl >= 5 ? [p.facing, -p.facing] : [p.facing];
+    for (const dir of dirs) {
+      const w = this.swipes.find((o) => !o.active);
+      if (!w) break;
+      w.active = true; w.hit.clear();
+      w.x = p.cx + dir * 20; w.y = p.cy - 6; w.dir = dir; w.left = D.range * g.areaMult; w.dmg = dmg; w.h = D.h * g.areaMult;
+      g.fx.seq(D.anim, w.x + dir * 40, w.y, D.range / D.speed + 0.05, dir, 1.05 * g.areaMult, 0, dir * D.speed, true);
+    }
+    g.fx.sfx('claw');
+  }
+
+  _stepSwipes(dt) {
+    const g = this.game, D = WEAPONS.garrasE;
+    for (const w of this.swipes) {
+      if (!w.active) continue;
+      const step = D.speed * dt;
+      w.x += w.dir * step; w.left -= step;
+      if (w.left <= 0) { w.active = false; continue; }
+      const x0 = Math.min(w.x, w.x + w.dir * 46), x1 = Math.max(w.x, w.x + w.dir * 46), y0 = w.y - w.h / 2, y1 = w.y + w.h / 2;
+      const near = g.enemies.grid.query(x0 - 30, y0 - 30, x1 + 30, y1 + 30, this._near);
+      for (let i = 0; i < near.length; i++) {
+        const e = near[i];
+        if (!e.active || w.hit.has(e) || e.x > x1 || e.x + e.w < x0 || e.y > y1 || e.y + e.h < y0) continue;
+        w.hit.add(e);
+        g.enemies.hurt(e, w.dmg, w.x - w.dir * 30, 120);
+      }
+    }
+  }
+
+  // Corte de Dados (Guaxinim): corte dos dois lados; quem é atingido trava (glitch)
+  _wDados(D, lvl, dmg) {
+    const g = this.game, p = g.player, r = D.r * g.areaMult * (lvl >= 5 ? 1.25 : 1), stun = D.stun * (lvl >= 5 ? 2 : 1);
+    for (const dir of [1, -1]) g.fx.seq(D.anim, p.cx + dir * r * 0.55, p.cy - 4, 0.36, dir, r / 92, 0, 0, true);
+    const near = g.enemies.grid.query(p.cx - r - 20, p.cy - r - 20, p.cx + r + 20, p.cy + r + 20, this._near);
+    let n = 0;
+    for (let i = 0; i < near.length; i++) {
+      const e = near[i];
+      if (!e.active || e.def.prop || Math.abs(e.cx - p.cx) > r + e.w / 2 || Math.abs(e.cy - p.cy) > r * 0.6 + e.h / 2) continue;
+      g.enemies.hurt(e, dmg, p.cx, 40);
+      if (!e.def.boss) e.stun = Math.max(e.stun, stun);
+      if (n++ < 6) g.fx.emit(e.cx, e.cy, 3, '#4dffa6', 90, 0.35, 2);
+    }
+    if (n && g.juice) g.juice.glitch(0.12);
+    g.fx.sfx('laser');
+  }
+
+  // Martelo de Impacto (Pug): pancada à frente + onda de choque pelo chão (duas no Nv 5)
+  _wMartelo(D, lvl, dmg) {
+    const g = this.game, p = g.player, dir = p.facing, fx = p.cx + dir * 46;
+    g.fx.seq(D.anim, fx, p.bottom + 4, 0.42, dir, 1.05 * g.areaMult);
+    const x0 = Math.min(p.cx, p.cx + dir * D.front * g.areaMult), x1 = Math.max(p.cx, p.cx + dir * D.front * g.areaMult);
+    const near = g.enemies.grid.query(x0 - 20, p.cy - 70, x1 + 20, p.bottom + 20, this._near);
+    for (let i = 0; i < near.length; i++) {
+      const e = near[i];
+      if (!e.active || e.x > x1 || e.x + e.w < x0 || e.y > p.bottom + 10 || e.y + e.h < p.cy - 60) continue;
+      g.enemies.hurt(e, dmg, p.cx, D.knock);
+    }
+    g.fx.shake(5);
+    if (g.juice) g.juice.shock(fx, p.bottom - 6, 90);
+    this._wave(fx, p.bottom, dmg * D.waveDmg, D.wave * g.areaMult, 0.08);
+    if (lvl >= 5) this._wave(fx, p.bottom, dmg * D.waveDmg, D.wave * 1.4 * g.areaMult, 0.4);
+    g.fx.sfx('boom');
+  }
+
+  _wave(x, y, dmg, reach, delay) {
+    const w = this.waves.find((o) => !o.active);
+    if (!w) return;
+    Object.assign(w, { active: true, x, y, dmg, reach, r: 0, delay });
+    w.hit.clear();
+  }
+
+  _stepWaves(dt) {
+    const g = this.game;
+    for (const w of this.waves) {
+      if (!w.active) continue;
+      if ((w.delay -= dt) > 0) continue;
+      const r0 = w.r; w.r += 620 * dt;
+      if (w.r >= w.reach) { w.active = false; continue; }
+      const near = g.enemies.grid.query(w.x - w.r - 20, w.y - 60, w.x + w.r + 20, w.y + 10, this._near);
+      for (let i = 0; i < near.length; i++) {
+        const e = near[i];
+        if (!e.active || w.hit.has(e) || e.def.flying || e.y + e.h < w.y - 50) continue;
+        if (Math.abs(e.cx - w.x) > w.r) continue;
+        w.hit.add(e);
+        g.enemies.hurt(e, w.dmg, w.x, 220);
+        if (!e.def.boss) e.vy = Math.min(e.vy, -260);
+      }
+      if (Math.floor(r0 / 28) !== Math.floor(w.r / 28)) for (const s of [1, -1]) { g.fx.emit(w.x + s * w.r, w.y - 3, 3, '#ff9a3c', 110, 0.35, 2, 500); g.fx.emit(w.x + s * w.r, w.y - 2, 1, '#ffd84d', 60, 0.25, 3, 200); }
+    }
   }
 
   // Garras: golpe em área à frente (e atrás a partir do Nv 5)

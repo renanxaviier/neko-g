@@ -25,10 +25,10 @@
   - Observações: abaixo do Pug há uma linha solta de ondas de choque e uma linha extra do Coelho (pedestais de cores trocadas) — ignorar. O Coelho do menu original era cinza; **corrigido** pelo produtor: usar `assets/concept/menu_coelho.jpg` (marrom, igual à folha de jogo). O **Corvo** só tem os quadros do menu; para ser jogável faltam as folhas de jogo (parado, correr/voar, pulo, dash, ataque, dano, morte).
 
 ## Combinado para a próxima sessão
-1. **Mais regras e objetivos** na Jornada (novos tipos de fase, fase elite, eventos).
+1. ~~Mais regras e objetivos na Jornada~~ — **feito** (GDD 3.5b: Elite, Colete, modificadores, estrelas).
 2. **Interface de usuário melhor** (HUD e telas).
 3. ~~**Menu do jogo melhor**~~ — **feito em 08/11** (v0.15): tela inicial limpa + tela **Escolher personagem** com os pedestais animados (GDD §8).
-4. **Mapa de progressão da Jornada** (caminho visual com os mapas e fases, bifurcações).
-5. **Armas por personagem** (desenho + implementação: compra/evolução no Esconderijo, troca o ataque básico e o efeito).
+4. ~~Mapa de progressão da Jornada~~ — **feito** (caminho com nós, estrelas e detalhes).
+5. ~~Armas por personagem~~ — **feito** para Gato, Guaxinim e Pug (GDD §7). Coelho/Macaco/Tatu junto com a integração deles.
 6. Integrar os novos personagens (quando chegarem os quadros que faltam) e os 3 novos chefões.
 - Em seguida, etapa 2 da Jornada: nível do personagem permanente + árvore de talentos.

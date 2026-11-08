@@ -52,6 +52,20 @@ export const JOURNEY = {
   clearCoins: 5,                         // Cyber-Moedas na 1ª vitória de cada mapa
   replayMult: 0.5,                       // mapa já vencido: metade do bônus
   replayBossCoins: 1,                    // e o chefe dá só 1 Cyber-Moeda
+  // v0.16 [PROPOSTA]: novos tipos de fase (a partir do mapa 2)
+  elite: { base: 3, perStage: 0.5, max: 6, hp: 4, every: 5, first: 3, scrap: 4 },   // inimigos de elite: vida ×hp, um por vez
+  collect: { base: 40, perStage: 8, perMap: 0.04, max: 110 },                     // G Batty coletados na fase
+  // Modificador do mapa (um por mapa, a partir do mapa 2). Multiplicadores sobre a fase normal.
+  modFrom: 1,
+  mods: {
+    enxame:    { icon: '🐀', name: 'ENXAME',     desc: 'Muito mais inimigos, mais frágeis',       alive: 1.45, rate: 0.75, hp: 0.7 },
+    blindados: { icon: '🛡', name: 'BLINDADOS',  desc: 'Inimigos +50% vida · +60% Sucata',        hp: 1.5, scrap: 1.6 },
+    furia:     { icon: '🔥', name: 'FÚRIA',      desc: 'Inimigos +40% dano · +30% XP',            dmg: 1.4, xp: 1.3 },
+    sobrecarga:{ icon: '⚡', name: 'SOBRECARGA', desc: 'Suas skills recarregam 20% mais rápido · inimigos +20% vida', cd: 0.8, hp: 1.2 },
+  },
+  // Estrelas do mapa: vencer · sem usar o revive · terminar com ≥ starHp de vida. Cada estrela nova dá Cyber-Moedas.
+  starHp: 0.5,
+  starCoins: 2,
 };
 
 // GDD 10.1 / 10.2
@@ -88,3 +102,18 @@ export const LIMITS = { enemies: 150, projectiles: 160, enemyShots: 80, particle
 export const SKILL_LIMITS = { actives: 4, passives: 4, maxLevel: 8 };
 
 export const SAVE_KEY = 'neonpaws.save.v1';
+
+// v0.16: armas exclusivas dos personagens [PROPOSTA]. Compradas/evoluídas com Sucata na tela "Escolher personagem".
+// Com a arma comprada, o personagem já começa a partida com ela disparando sozinha. Nível 5 = bônus especial.
+export const WEAPONS = {
+  costs: [150, 300, 500, 800, 1200],     // Sucata para o nível 1, 2, 3, 4, 5
+  garrasE: { char: 'gato', name: 'Garras Energizadas', icon: '≋', color: '#ff4df0', anim: 'wpn.garras',
+    desc: 'Três garras de energia avançam e atravessam a horda.', max5: 'Nv 5: lança para frente e para trás.',
+    cd: 1.7, cdMul: 0.93, dmg: 20, dmgPer: 8, range: 210, speed: 560, h: 40 },
+  corteDados: { char: 'guaxinim', name: 'Corte de Dados', icon: '⌁', color: '#4dffa6', anim: 'wpn.dados',
+    desc: 'Corte dos dois lados; quem é atingido trava com glitch.', max5: 'Nv 5: corte maior e glitch mais longo.',
+    cd: 2.0, cdMul: 0.93, dmg: 16, dmgPer: 7, r: 92, stun: 0.45 },
+  martelo: { char: 'pug', name: 'Martelo de Impacto', icon: '⚒', color: '#ff9a3c', anim: 'wpn.martelo',
+    desc: 'Pancada pesada à frente e onda de choque pelo chão.', max5: 'Nv 5: uma segunda onda de choque.',
+    cd: 2.6, cdMul: 0.93, dmg: 34, dmgPer: 12, front: 100, wave: 230, waveDmg: 0.6, knock: 300 },
+};

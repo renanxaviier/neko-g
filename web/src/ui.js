@@ -1,12 +1,13 @@
 // Interface em HTML por cima do canvas: HUD, cartas de level up, Segunda Chance, Game Over e tela inicial.
 
 import { GS } from './game.js';
-import { RUN } from './config.js';
+import { RUN, JOURNEY, WEAPONS } from './config.js';
 import { UPGRADES, upgradeCost, MAX_UPGRADE } from './meta.js';
 import { CHARS, ROSTER, charInfo } from './chars.js';
 import { errorText } from './cloud.js';
 import { exitApp } from './platform.js';
-import { journeyMap, goalText, goalIntro } from './journey.js';
+import { journeyMap, goalText, goalIntro, starText, starCount, STAGE_TYPES } from './journey.js';
+import { BOSS_TYPES, BOSS_ORDER } from './boss.js';
 import { iconSvg, ATTACK_LABEL, ATTACK_COLOR } from './controlIcons.js';
 import { CHECKIN_REWARDS, checkinState, ensureDaily, missionText, hasClaimable } from './missions.js';
 
@@ -346,7 +347,7 @@ export class UI {
       const b = document.createElement('button');
       b.className = 'cs-pip';
       b.style.setProperty('--pc', charInfo(id).color);
-      b.innerHTML = '<canvas width="64" height="64"></canvas>';
+      b.innerHTML = '<canvas width="96" height="96"></canvas>';
       b.addEventListener('click', () => { if (i !== this._cs) this._csGo(i - this._cs); });
       strip.appendChild(b);
       return b;
@@ -358,6 +359,7 @@ export class UI {
     this.el.title.classList.toggle('hidden', on || this.game.state !== GS.Title);
     if (on) {
       this._cs = Math.max(0, ROSTER.indexOf(this.game.meta.selected));
+      this._slide = 0;
       this._csRender(0);
     } else { this._renderChars(); this._showBest(); }
   }
@@ -367,6 +369,8 @@ export class UI {
     this.game.audio.sfx('select');
     this._csRender(d);
   }
+
+  _csWallet() { const m = this.game.meta; $('cs-wallet').innerHTML = `◆ <b>${m.cyberCoins}</b> &nbsp;⚙ <b>${m.scrap}</b>`; }
 
   _csState(id) {
     const m = this.game.meta;
@@ -378,7 +382,7 @@ export class UI {
   _csRender(dir) {
     const m = this.game.meta, id = ROSTER[this._cs], ch = charInfo(id), st = this._csState(id);
     this.el.chars.style.setProperty('--cc', ch.color);
-    $('cs-coins').textContent = m.cyberCoins;
+    this._csWallet();
     $('cs-name').textContent = ch.name;
     $('cs-trait').textContent = ch.trait;
     const tag = $('cs-tag');
@@ -397,6 +401,7 @@ export class UI {
       ];
       $('cs-stats').innerHTML = rows.map(([k, v]) => `<span>${k}</span><div class="bar"><i style="--w:${Math.round(Math.min(1, v) * 100)}%"></i></div>`).join('');
     }
+    this._csWeapon(ch, st);
     const a = $('cs-action');
     a.disabled = st === 'soon';
     a.classList.toggle('pulse', st === 'own');
@@ -406,10 +411,32 @@ export class UI {
       b.className = 'cs-pip' + (i === this._cs ? ' cur' : '') + (s2 === 'sel' ? ' sel' : '') + (s2 === 'lock' ? ' lock' : '');
     });
     if (dir) {
-      const big = this.el.csBig, info = $('cs-info');
-      big.classList.remove('inL', 'inR'); info.classList.remove('pop'); void big.offsetWidth;
-      big.classList.add(dir > 0 ? 'inR' : 'inL'); info.classList.add('pop');
+      this._slide = Math.sign(dir);                 // o palco desliza do lugar antigo até o centro
+      const info = $('cs-info');
+      info.classList.remove('pop'); void info.offsetWidth; info.classList.add('pop');
     }
+  }
+
+  // Arma exclusiva do personagem: nível 0–5, comprada com Sucata (só depois de ter o personagem)
+  _csWeapon(ch, st, bought) {
+    const box = $('cs-weapon'), D = ch.weapon && WEAPONS[ch.weapon];
+    box.classList.toggle('hidden', !D);
+    if (!D) return;
+    const m = this.game.meta, lvl = (m.weapons || {})[ch.weapon] || 0, cost = WEAPONS.costs[lvl];
+    box.style.setProperty('--wc', D.color);
+    box.className = 'cs-weapon' + (bought ? ' bought' : '');
+    const pips = Array.from({ length: WEAPONS.costs.length }, (_, i) => `<span class="${i < lvl ? 'on' : ''}"></span>`).join('');
+    const info = lvl >= 4 ? D.max5 : D.desc;
+    box.innerHTML = `<span class="wi">${D.icon}</span><span class="wt"><small>ARMA EXCLUSIVA${lvl ? ` · NV ${lvl}` : ''}</small><b>${D.name}</b><i>${info}</i><span class="pips">${pips}</span></span>`;
+    const b = document.createElement('button');
+    b.className = 'wb';
+    b.textContent = cost === undefined ? 'MÁX' : st === 'lock' ? '🔒' : `${lvl ? '▲' : 'COMPRAR'} ⚙ ${cost}`;
+    b.disabled = cost === undefined || st === 'lock' || m.scrap < cost;
+    b.addEventListener('click', () => {
+      if (this.game.buyWeapon(ch.weapon)) { this._toast(`${D.name} nível ${lvl + 1}!`); this._csWeapon(ch, st, true); this._csWallet(); }
+    });
+    box.appendChild(b);
+    if (st !== 'lock' && cost !== undefined && m.scrap < cost) b.title = `Faltam ⚙ ${cost - m.scrap}`;
   }
 
   _csAction() {
@@ -563,27 +590,71 @@ export class UI {
 
   _setMuteIcon(muted) { this.el.mute.textContent = muted ? '🔇' : '♪'; }
 
-  // Lista de mapas da Jornada: o próximo (novo) no topo, depois os já vencidos (para repetir)
+  // Mapa da Jornada: caminho que sobe (mapa 1 embaixo), um nó por mapa. Toque num nó = detalhes + jogar.
   showMaps(on) {
     $('ov-maps').classList.toggle('hidden', !on);
-    if (!on) return;
-    const jm = this.game.meta.jMax || 0, list = $('map-list');
-    list.innerHTML = '';
-    for (let m = jm; m >= 0; m--) {
-      const info = journeyMap(m), b = document.createElement('button');
-      b.className = 'map-row' + (m === jm ? ' new' : '');
-      b.style.setProperty('--c', info.biome.color);
-      const cyc = info.cycle ? ` · ciclo ${info.cycle + 1}` : '';
-      b.innerHTML = `<span class="n">${m + 1}</span><span class="nm"><b>${info.biome.name}</b><i>${info.stages.length - 1} fases + chefe${cyc}</i></span><span class="st">${m === jm ? 'NOVO' : '✔ vencido'}</span>`;
-      b.addEventListener('click', () => { this.showMaps(false); this.h.start({ mode: 'journey', map: m }); });
-      list.appendChild(b);
+    this.el.title.classList.toggle('hidden', on || this.game.state !== GS.Title);
+    if (!on) { this._showBest(); return; }
+    const meta = this.game.meta, jm = meta.jMax || 0, js = meta.jStars || {};
+    const total = jm + 3;                                   // vencidos + próximo + 2 bloqueados (prévia)
+    const STEP = 104, PAD = 70, PADB = 120, H = PAD + PADB + STEP * (total - 1);
+    const path = $('map-list'), scroll = $('jm-scroll');
+    path.style.height = `${H}px`;
+    const W = Math.min(420, scroll.clientWidth || 360);
+    const pos = (m) => ({ x: W * (0.5 + 0.3 * Math.sin(m * 1.15)), y: H - PADB - m * STEP });
+    let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">`;
+    for (let m = 0; m < total - 1; m++) {
+      const a = pos(m), b = pos(m + 1), done = m < jm, col = journeyMap(m + 1).biome.color;
+      const my = (a.y + b.y) / 2;
+      svg += `<path d="M${a.x} ${a.y} C${a.x} ${my} ${b.x} ${my} ${b.x} ${b.y}" fill="none" stroke="${done ? col : '#3a3352'}" stroke-width="${done ? 4 : 3}" ${done ? `style="filter: drop-shadow(0 0 4px ${col})"` : 'stroke-dasharray="6 8"'} />`;
     }
+    svg += '</svg>';
+    let html = svg;
+    let starsAll = 0;
+    for (let m = 0; m < total; m++) {
+      const info = journeyMap(m), p = pos(m), bits = js[m] || 0;
+      starsAll += starCount(bits);
+      if (m > 0 && m % 13 === 0) html += `<div class="jm-cycle" style="top:${p.y + STEP / 2}px">CICLO ${info.cycle + 1} · MAIS DIFÍCIL</div>`;
+      const cls = m < jm ? 'done' : m === jm ? 'next' : 'lock';
+      html += `<button class="jm-node ${cls}" data-m="${m}" style="left:${p.x}px; top:${p.y}px; --c:${info.biome.color}">
+        <span class="c">${cls === 'lock' ? '🔒' : m + 1}${info.mod && cls !== 'lock' ? `<span class="md">${info.mod.icon}</span>` : ''}</span>
+        <span class="nm">${info.biome.name}</span><span class="st">${cls === 'done' ? starText(bits) : cls === 'next' ? '☆☆☆' : ''}</span></button>`;
+    }
+    path.innerHTML = html;
+    $('jm-stars').textContent = `★ ${starsAll}/${jm * 3}`;
+    path.querySelectorAll('.jm-node').forEach((b) => b.addEventListener('click', () => this._jmSelect(Number(b.dataset.m))));
+    this._jmSelect(jm);
+    requestAnimationFrame(() => { scroll.scrollTop = pos(jm).y - scroll.clientHeight * 0.55; });
+  }
+
+  _jmSelect(m) {
+    const meta = this.game.meta, jm = meta.jMax || 0, info = journeyMap(m), bits = (meta.jStars || {})[m] || 0;
+    document.querySelectorAll('.jm-node').forEach((b) => b.classList.toggle('sel', Number(b.dataset.m) === m));
+    const card = $('jm-card');
+    card.style.setProperty('--c', info.biome.color);
+    const boss = info.biome.medium === 'water' ? 'Chefe aquático' : (BOSS_TYPES[BOSS_ORDER[m % BOSS_ORDER.length]] || {}).name || 'Chefe';
+    const stages = info.stages.map((st, i) => {
+      const T = STAGE_TYPES[st.type];
+      const lbl = st.type === 'boss' ? boss : st.type === 'survive' ? `${st.goal}s` : st.type === 'reach' ? `${Math.round(st.goal / 32)} m` : `${st.goal}`;
+      return `<span class="${st.type === 'boss' ? 'boss' : ''}">${T.icon}<small>${st.type === 'boss' ? 'CHEFE' : `FASE ${i + 1}`}<br>${lbl}</small></span>`;
+    }).join('');
+    const replay = m < jm;
+    card.innerHTML = `<h3>MAPA ${m + 1} · ${info.biome.name}<small>${replay ? starText(bits) : ''}</small></h3>
+      <div class="jm-stages">${stages}</div>
+      ${info.mod ? `<div class="jm-mod">${info.mod.icon} <b>${info.mod.name}</b> · ${info.mod.desc}</div>` : '<div class="jm-meta">Sem modificador · mapa de aprendizado</div>'}
+      <div class="jm-meta">${replay ? 'Já vencido: mais fácil para você, metade do bônus. Estrelas que faltam ainda dão ◆.' : `Vencer: ⚙ Sucata + ◆ ${JOURNEY.clearCoins} · cada estrela ◆ ${JOURNEY.starCoins}${info.cycle ? ` · ciclo ${info.cycle + 1}` : ''}`}</div>
+      <button class="btn primary" id="jm-play">▶ ${replay ? 'JOGAR DE NOVO' : 'JOGAR'}</button>`;
+    $('jm-play').addEventListener('click', () => { this.showMaps(false); this.h.start({ mode: 'journey', map: m }); });
   }
 
   // Início de cada fase da Jornada: anúncio com o objetivo
   showStage(map, s, st, last) {
     const tag = last ? `MAPA ${map.num} · CHEFE` : `MAPA ${map.num} · FASE ${s + 1}/${map.stages.length - 1}`;
     this.showBiome({ name: s === 0 ? map.biome.name : (last ? 'CHEFE' : `FASE ${s + 1}`), color: map.biome.color }, s === 0 ? `${tag} · ${goalIntro(st)}` : goalIntro(st));
+    if (s === 0 && map.mod) {                           // modificador do mapa: aviso logo depois do nome
+      clearTimeout(this._modT);
+      this._modT = setTimeout(() => { if (this.game.map === map && this.game.stage === 0) this.showBiome({ name: `${map.mod.icon} ${map.mod.name}`, color: '#ffd84d' }, `MODIFICADOR DO MAPA · ${map.mod.desc}`, true); }, 3200);
+    }
     $('sector-bar').style.setProperty('--sc', map.biome.color);
     $('sector-name').textContent = `M${map.num} · ${last ? 'CHEFE' : `${s + 1}/${map.stages.length - 1}`} · ${map.biome.name}`;
     this._last.sec = null;
@@ -616,6 +687,7 @@ export class UI {
       e.coins.textContent = `◆ ${cost} Cyber-Moedas (você tem ${have})`;
       e.coins.disabled = have < cost;
     }
+    if (s !== GS.Title) { this.el.chars.classList.add('hidden'); $('ov-maps').classList.add('hidden'); }
     if (s === GS.GameOver) { clearTimeout(this._bannerT); e.banner.classList.add('hidden'); this._showOver(); }
     if (s === GS.Title) { this._renderChars(); this._showBest(); this.el.tapMusic.classList.toggle('hidden', !this.game.audio.music.paused); }
     if (s === GS.Playing || s === GS.Start) this._refreshSkills();
@@ -671,11 +743,13 @@ export class UI {
     this.el.restart.textContent = r.mode === 'journey' ? (r.victory ? `▶ Próximo mapa (${r.map + 1})` : '↻ Tentar de novo') : '↻ Jogar de novo';
     if (r.mode === 'journey') {
       const bonus = r.victory ? `<div class="lbl">Bônus do mapa: <b class="rec">+⚙ ${r.bonusScrap}</b>${r.bonusCoins ? ` · <b class="rec">+◆ ${r.bonusCoins}</b>` : ''}${r.replay ? ' · mapa repetido (metade)' : ''}</div>` : '';
+      const st = r.victory ? `<div class="over-stars">${[1, 2, 4].map((b, i) => `<span class="${r.stars & b ? 'on' : ''}${r.newStars & b ? ' new' : ''}" style="animation-delay:${0.25 + i * 0.3}s"><i>★</i><small>${['Vencer', 'Sem revive', 'Vida ≥ 50%'][i]}</small></span>`).join('')}</div>${r.starCoins ? `<div class="lbl">Estrelas novas: <b class="rec">+◆ ${r.starCoins}</b></div>` : ''}` : '';
+      const mod = r.mod ? `<div class="lbl">${r.mod.icon} Modificador: <b>${r.mod.name}</b></div>` : '';
       this.el.overStats.innerHTML = `
       <div class="big" style="text-shadow: 0 0 12px ${r.sectorColor}">MAPA ${r.map}</div>
       <div class="lbl"><b style="color:${r.sectorColor}">${r.sectorName}</b> · ${r.victory ? 'chefe derrotado' : `parou na ${r.stage > r.stages - 1 ? 'luta com o chefe' : `fase ${r.stage}/${r.stages - 1}`}`}</div>
       <div class="grid3"><div><b>${fmtTime(r.time)}</b><span>tempo</span></div><div><b>${r.kills}</b><span>abates</span></div><div><b>${r.scrap}</b><span>Sucata</span></div></div>
-      ${bonus}
+      ${st}${bonus}${mod}
       <div class="lbl">Sucata guardada: ${r.totalScrap}</div>`;
       $('over-rank').textContent = '';
       const md = r.missionsDone || [];
@@ -752,8 +826,15 @@ export class UI {
       const t = performance.now() / 1000;
       if (!g.renderer) return;
       if (!e.chars.classList.contains('hidden')) {
-        const R = g.renderer, id = ROSTER[this._cs], st = this._csState(id);
-        R.drawThumb(e.csBig, 'menu.' + id, t, st === 'soon' ? 'saturate(0.55) brightness(0.75)' : false);
+        const R = g.renderer, cv = e.csBig, dpr = Math.min(2, window.devicePixelRatio || 1);
+        const cw = Math.round(cv.clientWidth * dpr), ch = Math.round(cv.clientHeight * dpr);
+        if (cw && (cv.width !== cw || cv.height !== ch)) { cv.width = cw; cv.height = ch; }
+        const now = performance.now(), dt = Math.min(0.05, (now - (this._csT || now)) / 1000);
+        this._csT = now;
+        if (this._slide) { this._slide *= Math.exp(-dt * 12); if (Math.abs(this._slide) < 0.004) this._slide = 0; }
+        if (!this._csItems) this._csItems = ROSTER.map((id) => ({ id, color: charInfo(id).color, dim: null }));
+        for (const it of this._csItems) it.dim = this._csState(it.id) === 'soon' ? 'saturate(0.45) brightness(0.7)' : null;
+        R.drawCharStage(cv, this._csItems, this._cs, t, this._slide);
         this._pips.forEach((b, i) => {
           const s2 = this._csState(ROSTER[i]);
           R.drawThumb(b.firstChild, 'menu.' + ROSTER[i], i === this._cs ? t : 0, s2 === 'soon' ? 'grayscale(1) brightness(0.35)' : s2 === 'lock' ? 'grayscale(0.7) brightness(0.6)' : false);

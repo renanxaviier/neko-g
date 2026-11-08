@@ -74,7 +74,7 @@ export class Pickups {
     const g = this.game;
     o.active = false;
     this.count--;
-    if (o.kind === PK.BATTERY) g.addXp(o.value);
+    if (o.kind === PK.BATTERY) { g.addXp(o.value); g.batteries++; }
     else if (o.kind === PK.SCRAP) g.addScrap(o.value);
     else g.healPercent(o.value);
     g.fx.pickup(o.kind, o.x, o.y);

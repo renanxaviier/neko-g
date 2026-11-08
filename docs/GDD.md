@@ -168,6 +168,12 @@ Chefes surgem em marcos de tempo (3:00, 6:00, 9:00, 12:00 e repetem) e garantem 
 
 ---
 
+#### 3.5b Regras novas da Jornada (v0.16, 08/11/2026) [PROPOSTA]
+- **Fases novas (a partir do mapa 2):** **Caçada de Elite** (derrote 3–6 inimigos de elite, um por vez: médio/tanque do cenário com vida ×4, aura dourada, estrela, barra sempre visível e seta dourada na borda; cada um solta Sucata extra, uma cura e XP ×3) e **Colete G Batty** (pegue N baterias de XP na fase). O mapa 1 continua só com Sobreviva / Derrote / Saída.
+- **Modificador do mapa (a partir do mapa 2):** um por mapa, sorteado pela semente do mapa e anunciado no começo — **Enxame** (+45% inimigos vivos, aparecem mais rápido, −30% vida), **Blindados** (+50% vida, +60% Sucata), **Fúria** (+40% dano inimigo, +30% XP), **Sobrecarga** (skills recarregam 20% mais rápido, inimigos +20% vida). Valores em `JOURNEY.mods`.
+- **3 estrelas por mapa:** vencer · sem usar o revive · terminar com ≥ 50% de vida. Cada estrela conquistada pela 1ª vez dá ◆ 2 (também ao repetir o mapa). Salvas em `meta.jStars`.
+- **Mapa da Jornada** (botão 🗺 MAPAS): caminho subindo com um nó por mapa (cor do cenário, número, estrelas, ícone do modificador), o próximo pulsando, 2 mapas bloqueados de prévia e o marco de cada novo ciclo. Tocar num nó mostra as fases, o chefe, o modificador e o botão Jogar.
+
 ## 4. Level Up e Skills
 
 - Ao subir de nível, o jogo pausa e mostra **3 cartas**; o jogador escolhe 1.
@@ -289,6 +295,14 @@ Arte conceitual em `assets/concept/personagens_jogaveis.jpg`. Todos têm o kit b
 | Guaxinim | Plana com paraquedas (segurar PULO caindo) | Lâmina Hacker (−10% dano, +10% alcance) | Garras + Drones Orbitais | −10% HP, +30% ímã | ◆ 120 |
 | Pug | Queda pesada: DASH no ar → mergulho com onda de choque em área | Soco de Energia (+35% dano, −15% alcance) | Garras | +30% HP, um pouco mais lento | ◆ 160 |
 Desbloqueio com Cyber-Moedas na tela **Escolher personagem** (v0.15). Preços **[PROPOSTA]**.
+**Armas exclusivas (v0.16) [PROPOSTA]** — `WEAPONS` em config.js. Compradas e evoluídas com Sucata (150/300/500/800/1200) na tela Escolher personagem; com a arma comprada, o personagem começa a partida com ela disparando sozinha (só dispara com inimigo por perto):
+| Personagem | Arma | Efeito | Nível 5 |
+|---|---|---|---|
+| Gato | Garras Energizadas | três garras de energia avançam 210 px atravessando a horda | lança para frente e para trás |
+| Guaxinim | Corte de Dados | corte dos dois lados; quem é atingido trava (glitch) 0,45 s | corte 25% maior e glitch em dobro |
+| Pug | Martelo de Impacto | pancada à frente com empurrão forte + onda de choque pelo chão | segunda onda de choque |
+| Coelho / Macaco / Tatu | Golpe de Energia / Laser-Plasma / Ondas de choque | quando forem integrados | — |
+
 **Atenção:** o pulo duplo agora é de **todos** os personagens (regra do produtor), então o traço do Gato precisa ser outro (ex.: 2 pulos aéreos ou dash mais longo) **[EM ABERTO]**.
 
 ---
