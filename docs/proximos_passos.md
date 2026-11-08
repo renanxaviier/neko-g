@@ -21,6 +21,9 @@
 - `assets/concept/armas_vfx.jpg`: efeitos de armas. **Fogo:** laser (8 q.), rajada com rastros (6), plasma (8), ondas de choque (6), explosão glitch (8). **Brancas:** corte de dados (6), golpe de energia com meia-lua (8), arcos elétricos (6), martelo de impacto (8), garras energizadas (6).
   - Ideia do produtor: **armas por personagem**, como upgrade de uso exclusivo, escolhidas pela característica de cada um. Proposta inicial [PROPOSTA]: Gato → garras energizadas; Guaxinim → corte de dados / blaster glitch; Pug → martelo de impacto; Coelho → lâmina de energia (meia-lua); Macaco → laser, rajada ou plasma; Tatu → ondas de choque / arcos elétricos.
 
+- `assets/concept/menu_personagens.jpg`: **tela de escolher personagem**: 3 quadros de "parado" sobre um pedestal neon para Gato, Guaxinim, Pug, Coelho, Macaco, Tatu e **Corvo (personagem novo)**.
+  - Observações: abaixo do Pug há uma linha solta de ondas de choque e uma linha extra do Coelho (pedestais de cores trocadas) — ignorar. O **Coelho do menu é cinza/branco**, mas o da folha de jogo é **marrom**: confirmar com o produtor qual vale. O **Corvo** só tem os quadros do menu; para ser jogável faltam as folhas de jogo (parado, correr/voar, pulo, dash, ataque, dano, morte).
+
 ## Combinado para a próxima sessão
 1. **Mais regras e objetivos** na Jornada (novos tipos de fase, fase elite, eventos).
 2. **Interface de usuário melhor** (HUD e telas).
