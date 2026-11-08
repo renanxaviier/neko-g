@@ -324,7 +324,7 @@ export class Game {
   _placeExit(D) {
     const p = this.player, w = this.world;
     let x = p.cx + D, y = null;
-    for (let k = 0; k < 40 && y === null; k++, x += TILE) y = w.surfaceNear(Math.floor(x / TILE), -2 * TILE, 3);
+    for (let k = 0; k < 40; k++, x += TILE * 3) { const sp = w.portalSpot(x, -2 * TILE, 2); if (sp) { x = sp.x; y = sp.y; break; } }
     if (y === null) y = -2 * TILE;
     this.portal = { x, y, t: 0, color: this.map.biome.color, next: this._nextStageInfo(), exit: true };
   }
@@ -383,9 +383,10 @@ export class Game {
     const p = this.player, w = this.world;
     let px = x;
     if (Math.abs(px - p.cx) > 260) px = p.cx + Math.sign(px - p.cx) * 160;   // não deixa longe demais
-    let sy = w.surfaceNear(Math.floor(px / TILE), p.bottom, 3);
-    if (sy === null) { px = p.cx + 70 * (p.facing || 1); sy = w.surfaceNear(Math.floor(px / TILE), p.bottom, 3); }
-    if (sy === null) { px = p.cx; sy = p.bottom; }
+    // lugar livre (nunca dentro de parede): perto do ponto pedido, senão perto do jogador
+    const spot = w.portalSpot(px, p.bottom) || w.portalSpot(p.cx, p.bottom, 20);
+    let sy;
+    if (spot) { px = spot.x; sy = spot.y; } else { px = p.cx; sy = p.bottom; }
     const next = this.mode === 'journey' ? this._nextStageInfo() : sectorInfo(this.sector + 1);
     this.portal = { x: px, y: sy, t: 0, color: next.biome.color, next };
     this.fx.effect('ring', { x: px, y: sy - 30, r: 6, maxR: 90, color: next.biome.color, life: 0.6 });

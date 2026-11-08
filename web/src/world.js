@@ -104,6 +104,25 @@ export class World {
     return best;
   }
 
+  // Lugar livre para um portal (≈ 2 tiles de largura × 3 de altura) perto de x: chão firme embaixo e nada
+  // sólido nem plataforma atravessando o desenho. Procura para os lados, a partir de x. null = não achou.
+  portalSpot(x, nearY, reach = 12) {
+    const tx0 = Math.floor(x / TILE);
+    for (let i = 0; i <= reach * 2; i++) {
+      const tx = tx0 + (i % 2 ? (i + 1) / 2 : -i / 2);
+      const y = this.surfaceNear(tx, nearY, 3);
+      if (y === null || Math.abs(y - nearY) > 6 * TILE) continue;
+      const ty = y / TILE;
+      let ok = true;
+      for (let dx = -1; dx <= 1 && ok; dx++) {
+        for (let k = 1; k <= 3; k++) if (this.tileAt(tx + dx, ty - k) !== EMPTY) { ok = false; break; }
+        if (ok && dx !== 0 && this.tileAt(tx + dx, ty) === EMPTY && this.tileAt(tx + dx, ty + 1) === EMPTY) ok = false;   // sem buraco do lado
+      }
+      if (ok) return { x: tx * TILE + TILE / 2, y };
+    }
+    return null;
+  }
+
   // Sorteio ponderado com passadas que relaxam as regras (nunca trava por falta de chunk compatível).
   _generate(ci, toRight) {
     const neighbor = VARIANTS[this.chunks.get(toRight ? ci - 1 : ci + 1)];
