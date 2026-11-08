@@ -6,6 +6,7 @@ import { UPGRADES, upgradeCost, MAX_UPGRADE } from './meta.js';
 import { CHARS, CHAR_ORDER } from './chars.js';
 import { errorText } from './cloud.js';
 import { exitApp } from './platform.js';
+import { journeyMap, goalText, goalIntro } from './journey.js';
 import { iconSvg, ATTACK_LABEL, ATTACK_COLOR } from './controlIcons.js';
 import { CHECKIN_REWARDS, checkinState, ensureDaily, missionText, hasClaimable } from './missions.js';
 
@@ -34,8 +35,11 @@ export class UI {
     this._last = {};
     this._cardsReadyAt = 0;
 
-    $('btn-start').addEventListener('click', () => this.h.start());
-    this.el.restart.addEventListener('click', () => this.h.restart());
+    $('btn-start').addEventListener('click', () => this.h.start({ mode: 'endless' }));
+    $('btn-journey').addEventListener('click', () => this.h.start({ mode: 'journey', map: game.meta.jMax || 0 }));
+    $('btn-maps').addEventListener('click', () => this.showMaps(true));
+    $('btn-maps-back').addEventListener('click', () => this.showMaps(false));
+    this.el.restart.addEventListener('click', () => this.h.start((game.lastResult && game.lastResult.next) || { mode: 'endless' }));
     $('btn-menu').addEventListener('click', () => game.toTitle());
     $('btn-hideout').addEventListener('click', () => this.showHideout(true));
     $('btn-over-hideout').addEventListener('click', () => { game.toTitle(); this.showHideout(true); });
@@ -418,6 +422,7 @@ export class UI {
 
   back(exit) {
     const open = ['ov-checkin', 'ov-missions', 'ov-hideout', 'ov-account', 'ov-ranking', 'ov-dev'].find((id) => !$(id).classList.contains('hidden'));
+    if (!$('ov-maps').classList.contains('hidden')) return this.showMaps(false);
     if (open === 'ov-dev') return this.showDev(false);
     if (open === 'ov-account') return this.showAccount(false);
     if (open === 'ov-ranking') return this.showRanking(false);
@@ -439,12 +444,18 @@ export class UI {
     $('sector-name').textContent = `S${info.num} · ${info.biome.name}`;
     this._last.sec = null;
   }
-  showPortal(next) { this.showBiome({ name: 'PORTAL ABERTO', color: next.biome.color }, `ENTRE PARA O SETOR ${next.num}: ${next.biome.name}`); }
+  showPortal(next) { if (next.stageLabel !== undefined) return this.showBiome({ name: 'PORTAL ABERTO', color: next.biome.color }, `ENTRE: ${next.stageLabel}`); this.showBiome({ name: 'PORTAL ABERTO', color: next.biome.color }, `ENTRE PARA O SETOR ${next.num}: ${next.biome.name}`); }
 
   _updateSector() {
     const g = this.game, L = this._last;
     let key, pct, tag, cls = '';
-    if (g.portal) { key = 'p'; pct = 100; tag = 'PORTAL ➜'; cls = 'portal'; }
+    if (g.mode === 'journey' && g.stageInfo) {         // Jornada: barra = progresso do objetivo da fase
+      const st = g.stageInfo;
+      if (g.mapDoneT > 0) { key = 'w'; pct = 100; tag = 'MAPA VENCIDO!'; cls = 'portal'; }
+      else if (g.stageDone && g.portal) { key = 'p'; pct = 100; tag = 'PORTAL ➜'; cls = 'portal'; }
+      else if (st.type === 'boss') { key = g.boss ? 'b' : 'bw'; pct = g.boss ? (100 * g.boss.hp) / g.boss.maxHp : 100; tag = 'CHEFE!'; cls = 'boss'; if (g.boss) key += Math.round(pct); }
+      else { const pr = g.stageProgress(); tag = goalText(st, pr); key = tag; pct = 100 * g.stageFrac(); }
+    } else if (g.portal) { key = 'p'; pct = 100; tag = 'PORTAL ➜'; cls = 'portal'; }
     else if (g.boss) { key = 'b'; pct = 100; tag = 'CHEFÃO!'; cls = 'boss'; }
     else {
       const left = Math.max(0, Math.ceil(g.sectorBossAt - g.sectorTime));
@@ -460,13 +471,41 @@ export class UI {
   }
 
   showBossWarning(def) { this.showBiome({ name: def.name, color: def.glow }, '⚠ CHEFÃO SE APROXIMANDO ⚠', true); }
-  showBossDown(def) { this.showBiome({ name: 'CHEFÃO DERROTADO!', color: def.glow }, '+◆ 5 CYBER-MOEDAS'); }
+  showBossDown(def, coins = 5) { this.showBiome({ name: 'CHEFÃO DERROTADO!', color: def.glow }, `+◆ ${coins} CYBER-MOEDA${coins === 1 ? '' : 'S'}`); }
   bossPhase(ph) { if (this.game.juice) this.game.juice.glitch(0.3); this.showBiome({ name: `FASE ${ph}`, color: '#ff3b5c' }, 'O CHEFÃO ESTÁ FURIOSO', true); }
 
   _setMuteIcon(muted) { this.el.mute.textContent = muted ? '🔇' : '♪'; }
 
+  // Lista de mapas da Jornada: o próximo (novo) no topo, depois os já vencidos (para repetir)
+  showMaps(on) {
+    $('ov-maps').classList.toggle('hidden', !on);
+    if (!on) return;
+    const jm = this.game.meta.jMax || 0, list = $('map-list');
+    list.innerHTML = '';
+    for (let m = jm; m >= 0; m--) {
+      const info = journeyMap(m), b = document.createElement('button');
+      b.className = 'map-row' + (m === jm ? ' new' : '');
+      b.style.setProperty('--c', info.biome.color);
+      const cyc = info.cycle ? ` · ciclo ${info.cycle + 1}` : '';
+      b.innerHTML = `<span class="n">${m + 1}</span><span class="nm"><b>${info.biome.name}</b><i>${info.stages.length - 1} fases + chefe${cyc}</i></span><span class="st">${m === jm ? 'NOVO' : '✔ vencido'}</span>`;
+      b.addEventListener('click', () => { this.showMaps(false); this.h.start({ mode: 'journey', map: m }); });
+      list.appendChild(b);
+    }
+  }
+
+  // Início de cada fase da Jornada: anúncio com o objetivo
+  showStage(map, s, st, last) {
+    const tag = last ? `MAPA ${map.num} · CHEFE` : `MAPA ${map.num} · FASE ${s + 1}/${map.stages.length - 1}`;
+    this.showBiome({ name: s === 0 ? map.biome.name : (last ? 'CHEFE' : `FASE ${s + 1}`), color: map.biome.color }, s === 0 ? `${tag} · ${goalIntro(st)}` : goalIntro(st));
+    $('sector-bar').style.setProperty('--sc', map.biome.color);
+    $('sector-name').textContent = `M${map.num} · ${last ? 'CHEFE' : `${s + 1}/${map.stages.length - 1}`} · ${map.biome.name}`;
+    this._last.sec = null;
+  }
+
   _showBest() {
     const m = this.game.meta;
+    const jm = m.jMax || 0;
+    $('journey-map').textContent = `Mapa ${jm + 1} · ${journeyMap(jm).biome.name}`;
     $('btn-missions').innerHTML = '◆ MISSÕES' + (hasClaimable(m) ? '<span class="dot"></span>' : '');
     this.el.best.innerHTML = m.runs
       ? `<span>Recorde <b>${fmtTime(m.bestTime)}</b></span><span>⚙ <b>${m.scrap}</b></span><span>◆ <b>${m.cyberCoins}</b></span>`
@@ -476,7 +515,7 @@ export class UI {
   onState(s) {
     const e = this.el;
     e.title.classList.toggle('hidden', s !== GS.Title);
-    if (s !== GS.Title) { e.hideout.classList.add('hidden'); for (const id of ['ov-missions', 'ov-checkin', 'ov-account', 'ov-ranking', 'ov-dev']) $(id).classList.add('hidden'); }
+    if (s !== GS.Title) { e.hideout.classList.add('hidden'); for (const id of ['ov-missions', 'ov-checkin', 'ov-account', 'ov-ranking', 'ov-dev', 'ov-maps']) $(id).classList.add('hidden'); }
     e.levelup.classList.toggle('hidden', s !== GS.LevelUp);
     e.revive.classList.toggle('hidden', s !== GS.Revive);
     e.over.classList.toggle('hidden', s !== GS.GameOver);
@@ -490,7 +529,7 @@ export class UI {
       e.coins.textContent = `◆ ${cost} Cyber-Moedas (você tem ${have})`;
       e.coins.disabled = have < cost;
     }
-    if (s === GS.GameOver) this._showOver();
+    if (s === GS.GameOver) { clearTimeout(this._bannerT); e.banner.classList.add('hidden'); this._showOver(); }
     if (s === GS.Title) { this._renderChars(); this._showBest(); this.el.tapMusic.classList.toggle('hidden', !this.game.audio.music.paused); }
     if (s === GS.Playing || s === GS.Start) this._refreshSkills();
   }
@@ -541,6 +580,22 @@ export class UI {
 
   _showOver() {
     const r = this.game.lastResult;
+    $('over-title').textContent = r.mode === 'journey' ? (r.victory ? 'MAPA CONCLUÍDO!' : 'MAPA FALHOU') : 'FIM DE JOGO';
+    this.el.restart.textContent = r.mode === 'journey' ? (r.victory ? `▶ Próximo mapa (${r.map + 1})` : '↻ Tentar de novo') : '↻ Jogar de novo';
+    if (r.mode === 'journey') {
+      const bonus = r.victory ? `<div class="lbl">Bônus do mapa: <b class="rec">+⚙ ${r.bonusScrap}</b>${r.bonusCoins ? ` · <b class="rec">+◆ ${r.bonusCoins}</b>` : ''}${r.replay ? ' · mapa repetido (metade)' : ''}</div>` : '';
+      this.el.overStats.innerHTML = `
+      <div class="big" style="text-shadow: 0 0 12px ${r.sectorColor}">MAPA ${r.map}</div>
+      <div class="lbl"><b style="color:${r.sectorColor}">${r.sectorName}</b> · ${r.victory ? 'chefe derrotado' : `parou na ${r.stage > r.stages - 1 ? 'luta com o chefe' : `fase ${r.stage}/${r.stages - 1}`}`}</div>
+      <div class="grid3"><div><b>${fmtTime(r.time)}</b><span>tempo</span></div><div><b>${r.kills}</b><span>abates</span></div><div><b>${r.scrap}</b><span>Sucata</span></div></div>
+      ${bonus}
+      <div class="lbl">Sucata guardada: ${r.totalScrap}</div>`;
+      $('over-rank').textContent = '';
+      const md = r.missionsDone || [];
+      $('over-missions').innerHTML = md.length ? 'MISSÕES CONCLUÍDAS · resgate no menu<br>' + md.map((m) => `✔ ${missionText(m)} · ◆ ${m.reward}`).join('<br>') : '';
+      this._showBest();
+      return;
+    }
     this.el.overStats.innerHTML = `
       <div class="big">${fmtTime(r.time)}</div>
       <div class="lbl">tempo de sobrevivência${r.best ? ' · <b class="rec">NOVO RECORDE!</b>' : ''}</div>

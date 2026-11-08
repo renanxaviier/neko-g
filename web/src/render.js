@@ -482,7 +482,7 @@ export class Renderer {
     else {
       keep.add('boss');
       for (const sh of BIOME_SHEETS[info.biome.id] || []) keep.add(sh);
-      if (g.portal) for (const sh of BIOME_SHEETS[sectorInfo(info.n + 1).biome.id] || []) keep.add(sh);   // próximo setor
+      if (g.portal && !info.journey) for (const sh of BIOME_SHEETS[sectorInfo(info.n + 1).biome.id] || []) keep.add(sh);   // próximo setor
     }
     for (const sh of keep) this._sheet(sh);
     for (const [name, S] of Object.entries(this.sheets)) {

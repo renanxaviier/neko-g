@@ -34,10 +34,10 @@ if (params.has('coins')) {                     // só para testes: define o sald
   try { localStorage.setItem('neonpaws.save.v1', JSON.stringify(game.meta)); } catch { /* sem armazenamento */ }
 }
 
-const start = () => {
+const start = (opts) => {
   audio.unlock();
   if (audio.music.paused) audio.startMusic();
-  game.newRun();
+  game.newRun(opts);
 };
 game.ui = new UI(game, { start, restart: start });
 game.ui.onState(GS.Title);

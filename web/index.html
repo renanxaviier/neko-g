@@ -269,6 +269,16 @@
   .rk-empty { opacity: .7; padding: 16px; font-size: 14px; }
   .rk-me { font-size: 13px; min-height: 18px; }
   #over-rank { font-size: 13px; color: #4dffa6; min-height: 16px; }
+  #btn-journey small { display: block; font-size: 12px; font-weight: normal; opacity: .85; letter-spacing: 1px; margin-top: 2px; }
+  #ov-maps .panel { width: min(92%, 360px); display: flex; flex-direction: column; gap: 10px; align-items: stretch; max-height: 96%; pointer-events: auto; }
+  #map-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 56vh; padding: 2px; }
+  .map-row { pointer-events: auto; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--c); background: rgba(12,8,30,.88); color: #fff; font: inherit; text-align: left; box-shadow: 0 0 8px color-mix(in srgb, var(--c) 40%, transparent); }
+  .map-row .n { font-weight: bold; font-size: 18px; min-width: 36px; color: var(--c); }
+  .map-row .nm { flex: 1; display: flex; flex-direction: column; }
+  .map-row .nm i { font-style: normal; font-size: 11px; opacity: .7; }
+  .map-row .st { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: #2a2244; }
+  .map-row.new .st { background: var(--pink); color: #fff; }
+  .map-row.locked { opacity: .35; pointer-events: none; }
   #ov-missions .panel, #ov-checkin .panel { width: min(92%, 360px); display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
   .ms { pointer-events: auto; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 10px 12px; border-radius: 12px;
     border: 2px solid rgba(94,240,255,.35); background: rgba(10,8,28,.85); text-align: left; }
@@ -342,7 +352,11 @@
     <div class="bottom">
       <div class="chars" id="chars"></div>
       <div id="toast" class="hidden"></div>
-      <button id="btn-start" class="btn primary pulse">▶ JOGAR</button>
+      <button id="btn-journey" class="btn primary pulse">▶ JORNADA <small id="journey-map"></small></button>
+      <div class="row2">
+        <button id="btn-start" class="btn" style="--c: var(--cyan)">∞ INFINITO</button>
+        <button id="btn-maps" class="btn" style="--c: #4dffa6">🗺 MAPAS</button>
+      </div>
       <div class="row2">
         <button id="btn-hideout" class="btn" style="--c: var(--gold)">⚙ ESCONDERIJO</button>
         <button id="btn-missions" class="btn" style="--c: #c04dff">◆ MISSÕES</button>
@@ -410,6 +424,15 @@
       <div class="reset" id="mission-reset"></div>
       <button id="btn-checkin-open" class="btn" style="--c: #c04dff">📅 Check-in diário</button>
       <button id="btn-missions-back" class="btn primary">◀ Voltar</button>
+    </div>
+  </div>
+
+  <div id="ov-maps" class="ov dark hidden">
+    <div class="panel">
+      <h2>JORNADA</h2>
+      <div class="sub">Cada mapa: fases com objetivos + chefe. Mapas já vencidos ficam mais fáceis para você, mas dão metade do bônus.</div>
+      <div id="map-list"></div>
+      <button id="btn-maps-back" class="btn primary">◀ Voltar</button>
     </div>
   </div>
 
@@ -484,7 +507,7 @@
   </div>
 
   <div id="ov-over" class="ov dim hidden">
-    <h2>FIM DE JOGO</h2>
+    <h2 id="over-title">FIM DE JOGO</h2>
     <div id="over-stats"></div>
     <div id="over-missions"></div>
     <div id="over-rank"></div>

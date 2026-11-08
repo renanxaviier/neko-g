@@ -39,6 +39,21 @@ export const WATER = {
   pickupGravity: 120, pickupMaxFall: 50,
 };
 
+// Modo Jornada (GDD 3.5): mapas gerados em sequência, cada um com fases + chefe
+export const JOURNEY = {
+  stagesPerMap: 4,                       // fases antes do chefe
+  stageDiff: 0.25,                       // cada fase soma isto à dificuldade do mapa (n do Spawner)
+  survive: { base: 60, perStage: 10 },   // segundos
+  hunt: { base: 32, perStage: 9, perMap: 0.06, max: 90 },   // abates
+  reach: { base: 2800, perStage: 450 },  // distância até a saída (px de mundo; 32 px = 1 m)
+  bossDelay: 5,                          // segundos até o chefe surgir na fase final
+  bossHpPerMap: 0.12, bossHpPerCycle: 0.6,
+  clearScrap: { base: 30, perMap: 8 },   // bônus de Sucata ao vencer o mapa
+  clearCoins: 5,                         // Cyber-Moedas na 1ª vitória de cada mapa
+  replayMult: 0.5,                       // mapa já vencido: metade do bônus
+  replayBossCoins: 1,                    // e o chefe dá só 1 Cyber-Moeda
+};
+
 // GDD 10.1 / 10.2
 export const RUN = {
   maxHP: 120,

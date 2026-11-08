@@ -31,6 +31,10 @@ jobs:
         working-directory: android-app
         run: npm run prepare:android
 
+      # Chave de teste fixa (a SHA-1 dela está cadastrada no Firebase para o login com Google)
+      - name: Chave de teste fixa
+        run: mkdir -p ~/.android && cp android-app/keystore/debug.keystore ~/.android/debug.keystore
+
       - name: Compilar APK (debug)
         working-directory: android-app/android
         run: chmod +x gradlew && ./gradlew assembleDebug

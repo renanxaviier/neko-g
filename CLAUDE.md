@@ -19,6 +19,7 @@
 - A Unity foi abandonada; os scripts C# estão em `archive/unity-Assets/` apenas como referência de lógica.
 - **Pilar técnico: jogo "democrático"** — rodar bem em celulares simples: pools fixos, grade espacial, neon pré-desenhado, resolução limitada a 2×, HUD em DOM atualizado só quando muda.
 - Sprites em **folhas separadas** (`web/assets/sprites/{core,boss,bio_*}.webp`, geradas por `tools/build_atlas.py`): o núcleo carrega sempre; as peças de cenário só do setor atual (e do próximo quando o portal abre). Nenhuma folha pode passar de 4096 px.
+- Dois modos: **Infinito** (setores) e **Jornada** (`journey.js`: mapas com fases + chefe; `JOURNEY` em config.js; GDD 3.5).
 - Música por setor (`TRACKS` em audio.js; `music` no bioma). Faixas compostas por código em `tools/compose.py` (sintetizador offline → MP3).
 - Testes: Chrome headless + bot (`?bot=1&speed=N&god=1&debug=1&seed=N`). Protótipo: artifact **"Neko G — protótipo (dev)"** (slug 6d96f83e-1a43-42a6-aceb-e34735bd4a27) é o que recebe as atualizações. O primeiro link ("Neko G — protótipo") foi tornado público pelo produtor e não pode ser atualizado daqui.
 

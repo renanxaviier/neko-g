@@ -131,6 +131,16 @@ As regras de tempo do GDD 10.3 continuam valendo (o bioma só aumenta o peso de 
   - **O Grande Glitch — serpente** (variação do Dragão): nada em ondas; sopro de plasma que varre, travessia rápida na altura do jogador, anel de bolhas elétricas e cardume de Peixes-Lanterna (fase 2+).
   - Na troca de fase os dois mostram os quadros de DANO da folha; ao morrer, os quadros de MORTE. Os monstros comuns também usam DANO (ao levar golpe) e MORTE.
 
+### 3.5 Modos de jogo: Infinito e Jornada (aprovado pelo produtor, 07/11/2026)
+- **Infinito:** o modo de setores em sequência até morrer (3.1b), com ranking global de tempo.
+- **Jornada:** mapas gerados em sequência, praticamente sem fim. Cada **mapa = um cenário** com **4 fases + chefe** (~6–8 min). Decisões tomadas (padrão sugerido, sem objeção do produtor): **as cartas valem para o mapa inteiro** e zeram no mapa seguinte; a Jornada terá ranking de "mapa mais longe" na etapa 3.
+- **Ordem dos cenários:** o mapa 1 é sempre o Distrito; a cada ciclo de 13 mapas os cenários vêm embaralhados (semente fixa por ciclo: o mesmo mapa é igual para todos), sem repetir o último cenário do ciclo anterior.
+- **Objetivos das fases** (sorteados por mapa, sem repetir o anterior; a 1ª fase do jogo é sempre "sobreviva"): **Sobreviva** X s (60 + 10/fase) · **Derrote** N inimigos (32 + 9/fase, +6% por mapa, máx. 90) · **Chegue à saída** (portal a 2800 + 450 px/fase à direita, com seta na borda da tela). Objetivo cumprido → abre o portal → próxima fase (mundo novo, +25% de vida). Fase final: o chefe surge em 5 s.
+- **Dificuldade:** n = mapa + 0,25 × fase (mesma fórmula do Spawner do Infinito); p = progresso do objetivo. Chefe: vida × (1 + 0,12 × mapa) × (1 + 0,6 × ciclo). Valores em `JOURNEY` (config.js).
+- **Recompensas:** chefe 5 ◆ (1 ◆ se o mapa já foi vencido); vitória: +Sucata (30 + 8 × mapa) e +5 ◆ na 1ª vez; mapa repetido dá metade da Sucata. Derrota: guarda a Sucata coletada, "Tentar de novo" o mesmo mapa.
+- **Telas:** menu com **▶ JORNADA (próximo mapa)**, **∞ INFINITO** e **🗺 MAPAS** (lista para repetir mapas vencidos). Barra do topo mostra mapa, fase e o objetivo com progresso.
+- **Próximas etapas:** (2) **nível do personagem** permanente + árvore de talentos por personagem (o que deixa as fases antigas mais fáceis); (3) caminho com bifurcações (fase elite, oficina, evento), **3 estrelas por fase**, desafio diário e ranking da Jornada; (4) modificadores por ciclo e chefes evoluídos.
+
 ### 3.2 Inimigos
 **34 inimigos** definidos pela arte conceitual — detalhes, comportamentos e tiers em **`docs/bestiario.md`**:
 - **Fracos (7):** Drone Olho, Morcego Cibernético, Cyber-Rato, Esquilo Bombardeiro, Vaga-lume Estático, Aranha-Drone, Ouriço-Espinho.

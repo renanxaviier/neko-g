@@ -1,6 +1,6 @@
 // Inimigos (pool fixo), IA simples por tipo, tiros inimigos e o spawner por tempo (GDD 10.3).
 
-import { TILE, LIMITS, VIEW_W, CHUNK_W, WATER } from './config.js';
+import { TILE, LIMITS, VIEW_W, CHUNK_W, WATER, JOURNEY } from './config.js';
 import { moveX, moveY } from './world.js';
 import { SpatialGrid } from './grid.js';
 import { biomeAt, SECTOR_ROSTER, SECTOR_ORDER } from './biomes.js';
@@ -758,6 +758,9 @@ export class Spawner {
   // Nível de pressão: n = setor (0..), p = quanto do setor já passou até o chefão (0 → 1, segue até 1,35)
   level() {
     const g = this.game;
+    if (g.mode === 'journey' && g.map) {               // Jornada: dificuldade do mapa + fase; p = quanto do objetivo já foi feito
+      return { n: g.diffN, p: Math.min(1.35, g.stageFrac()), cyc: g.map.cycle };
+    }
     const n = g.sector || 0;
     const p = Math.min(1.35, (g.sectorTime || 0) / (g.sectorBossAt || 150));
     return { n, p, cyc: Math.floor(n / SECTOR_ORDER.length) };
@@ -794,7 +797,7 @@ export class Spawner {
   // Mini-chefe do setor submerso: o Querubim-Tubarão aparece uma vez, na metade do caminho até o chefão
   _miniBoss() {
     const g = this.game;
-    if (!g.water || this.miniFor === g.sector || g.boss || g.sectorCleared) return;
+    if (!g.water || g.mode === 'journey' || this.miniFor === g.sector || g.boss || g.sectorCleared) return;
     if (g.sectorTime < g.sectorBossAt * 0.5) return;
     const p = g.player, view = g.camera.view, side = p.input.moveDir || 1, d = ENEMY_TYPES.querubim;
     const x = side > 0 ? view.right + 40 : view.left - 40 - d.w;
@@ -816,7 +819,10 @@ export class Spawner {
     if (!this.warned && g.sectorTime >= g.sectorBossAt - 3) { this.warned = true; g.onBossWarning(BOSS_TYPES[id]); }
     if (g.sectorTime < g.sectorBossAt || (this.bossRetry -= dt) > 0) return;
     const cycle = Math.floor(this.bossIdx / BOSS_ORDER.length);
-    const e = this._spawnBoss(id, (1 + 0.04 * (g.runTime / 60)) * (1 + 0.75 * cycle));
+    const hpMult = g.mode === 'journey' && g.map
+      ? (1 + JOURNEY.bossHpPerMap * g.map.n) * (1 + JOURNEY.bossHpPerCycle * g.map.cycle)
+      : (1 + 0.04 * (g.runTime / 60)) * (1 + 0.75 * cycle);
+    const e = this._spawnBoss(id, hpMult);
     if (!e) { this.bossRetry = 0.5; return; }
     this.bossIdx++; this.warned = false; this.waterBoss = null;
     g.onBossSpawn(e);
