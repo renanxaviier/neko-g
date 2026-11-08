@@ -1,10 +1,17 @@
 // Ponte com o app Android (Capacitor). No navegador tudo cai no modo web (anúncio simulado etc.).
 // No app, os plugins nativos são acessados pelo objeto global window.Capacitor (sem bundler).
 
-// IDs de TESTE do Google AdMob: troque pelos seus antes de publicar (veja android-app/README.md).
+import { BUILD } from './build.js';
+
+// AdMob (conta da RX Games). APKs de teste usam SEMPRE os blocos de teste do Google (nunca toque nos anúncios reais).
+// A versão da loja é gerada com ADS_MODE=real (veja android-app/scripts/prepare.mjs e o workflow do APK).
+const ADMOB = {
+  real: { app: 'ca-app-pub-6649269264969475~7641906932', rewarded: 'ca-app-pub-6649269264969475/4496868842' },   // Neko G · Revive - Protocolo de Backup
+  test: { app: 'ca-app-pub-3940256099942544~3347511713', rewarded: 'ca-app-pub-3940256099942544/5224354917' },   // testes oficiais do Google
+};
 export const ADS = {
-  testing: true,
-  rewardedAndroid: 'ca-app-pub-3940256099942544/5224354917',   // anúncio premiado de teste oficial do Google
+  testing: BUILD.ads !== 'real',
+  get rewardedAndroid() { return (this.testing ? ADMOB.test : ADMOB.real).rewarded; },
 };
 
 export const isNative = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -18,6 +25,13 @@ function plugin(name) {
 }
 
 let admob = null, adReady = false, adLoading = false;
+
+async function askAdConsent() {
+  try {
+    const info = await admob.requestConsentInfo();
+    if (info && info.isConsentFormAvailable && info.status === 'REQUIRED') await admob.showConsentForm();
+  } catch (e) { console.warn('[ads] consentimento', e); }
+}
 
 async function loadRewarded() {
   if (!admob || adReady || adLoading) return;
@@ -72,6 +86,7 @@ export async function initPlatform(handlers) {
   if (admob) {
     try {
       await admob.initialize({ initializeForTesting: ADS.testing });
+      if (!ADS.testing) await askAdConsent();       // LGPD/GDPR: formulário de consentimento do Google (UMP) quando exigido
       loadRewarded();
     } catch (e) {
       console.warn('[ads] AdMob indisponível', e);

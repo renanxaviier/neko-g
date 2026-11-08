@@ -11,8 +11,9 @@ const web = join(root, '..', 'web');
 const www = join(root, 'www');
 const run = (cmd) => execSync(cmd, { cwd: root, stdio: 'inherit' });
 
-// ID do app AdMob. Este é o ID de TESTE oficial do Google; troque pelo seu antes de publicar.
-const ADMOB_APP_ID = process.env.ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
+// Anúncios: ADS_MODE=real gera a versão da loja (AdMob da RX Games); qualquer outro valor = anúncios de teste do Google.
+const ADS_MODE = process.env.ADS_MODE === 'real' ? 'real' : 'test';
+const ADMOB_APP_ID = ADS_MODE === 'real' ? 'ca-app-pub-6649269264969475~7641906932' : 'ca-app-pub-3940256099942544~3347511713';
 
 // 1) Jogo → www/
 rmSync(www, { recursive: true, force: true });
@@ -28,7 +29,8 @@ if (existsSync(core)) {
 } else {
   console.warn('[aviso] @capacitor/core/dist/capacitor.js não encontrado: o jogo usará window.Capacitor.Plugins');
 }
-console.log('✔ jogo copiado para www/');
+writeFileSync(join(www, 'src', 'build.js'), `// Gerado por prepare.mjs\nexport const BUILD = { ads: '${ADS_MODE}' };\n`);
+console.log(`✔ jogo copiado para www/ (anúncios: ${ADS_MODE === 'real' ? 'REAIS' : 'de teste'})`);
 
 // 2) Projeto nativo (só na primeira vez)
 if (!existsSync(join(root, 'android'))) run('npx cap add android');
@@ -39,6 +41,7 @@ let xml = readFileSync(manifest, 'utf8');
 if (!xml.includes('android:screenOrientation')) {
   xml = xml.replace(/<activity(\s)/, '<activity android:screenOrientation="portrait"$1');
 }
+xml = xml.replace(/(com\.google\.android\.gms\.ads\.APPLICATION_ID"\s+android:value=")[^"]*"/, `$1${ADMOB_APP_ID}"`);
 if (!xml.includes('com.google.android.gms.ads.APPLICATION_ID')) {
   xml = xml.replace(/<\/application>/, `    <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="${ADMOB_APP_ID}"/>\n    </application>`);
 }
