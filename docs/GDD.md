@@ -335,6 +335,9 @@ Abertura → Esconderijo (hub: jogar, Laboratório, personagens, loja, missões,
 
 **Escolher personagem (v0.15):** pedestal grande animado (3 quadros, folha `menu`), setas ‹ › e deslizar o dedo para trocar, fileira com os 7 personagens (✓ em uso, 🔒 bloqueado, cinza = em breve). Mostra nome, traço, ataque básico e barras de Vida, Dano, Alcance, Velocidade e Ímã. Botão: SELECIONAR / ◆ preço · DESBLOQUEAR / ▶ JOGAR (se já está em uso, abre a Jornada). Coelho, Macaco, Tatu e Corvo aparecem como **EM BREVE** com o traço proposto **[PROPOSTA]** até serem integrados.
 
+**Notificações (v0.19) [PROPOSTA]:** nada abre sozinho ao entrar no jogo (antes o check-in diário abria em janela). Um **sino** no canto da tela inicial mostra quantos avisos há e balança quando há novidade; tocar abre a lista. Cada aviso leva direto à tela certa e some quando o jogador age:
+recompensa diária · missão concluída · novidades da versão (some ao tocar) · mapa novo liberado · pontos de talento · arma que dá para comprar/evoluir (personagem atual) · upgrade possível no Laboratório · personagem que dá para liberar. Lógica em `web/src/notify.js` (avisos calculados a partir do save).
+
 **Pacote dos testadores (v0.18) [PROPOSTA]:**
 - **Ataque automático** (padrão ligado): o personagem ataca quando há inimigo ao alcance do golpe (ou das Shurikens); parado, vira para o inimigo. Desligável em Opções; ligado, o botão ATAQUE some e o DASH ocupa o lugar dele.
 - **Opções** (⚙ na tela inicial e na pausa): ataque automático, som, vibração, tremor, números de dano; botões com tamanho P/M/G/GG, transparência 100/75/50% e modo canhoto; medidor de desempenho; rever tutorial.

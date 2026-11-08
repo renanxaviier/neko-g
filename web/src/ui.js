@@ -9,6 +9,7 @@ import { exitApp } from './platform.js';
 const saveMeta = (g) => { if (g.saveMeta) g.saveMeta(); };
 import { journeyMap, goalText, goalIntro, starText, starCount, STAGE_TYPES } from './journey.js';
 import { BOSS_TYPES, BOSS_ORDER } from './boss.js';
+import { notifications, CHANGELOG } from './notify.js';
 import { BRANCHES, TALENTS, charLevel, talentsOf, spentIn, pointsLeft, canLearn } from './talents.js';
 import { iconSvg, ATTACK_LABEL, ATTACK_COLOR } from './controlIcons.js';
 
@@ -106,8 +107,45 @@ export class UI {
     this._setMuteIcon(game.audio.muted);
     this._renderChars();
     this._showBest();
-    // Primeira abertura do dia: mostra o check-in
-    if (checkinState(game.meta).canClaim) setTimeout(() => { if (game.state === GS.Title) this.showCheckin(true); }, 600);
+    // v0.19: nada abre sozinho; os avisos (check-in, missões, talentos…) ficam no sino
+    $('btn-bell').addEventListener('click', () => this.showNotif(true));
+    $('nt-close').addEventListener('click', () => this.showNotif(false));
+    $('ov-notif').addEventListener('click', (e) => { if (e.target.id === 'ov-notif') this.showNotif(false); });
+    this._bell();
+  }
+
+  // ---------------- Notificações ----------------
+  _bell() {
+    const n = notifications(this.game.meta).length, b = $('bell-n');
+    b.textContent = n > 9 ? '9+' : n; b.classList.toggle('hidden', !n);
+    $('btn-bell').classList.toggle('has', n > 0);
+  }
+
+  showNotif(on) {
+    $('ov-notif').classList.toggle('hidden', !on);
+    if (!on) { this._bell(); return; }
+    this.game.audio.sfx('select');
+    const list = notifications(this.game.meta), box = $('nt-list');
+    box.innerHTML = list.length ? list.map((n, i) => `<button class="nt" data-i="${i}" style="--nc:${n.color}"><span class="ic">${n.icon}</span><span class="tx"><b>${n.title}</b><small>${n.sub}</small></span><span class="go">›</span></button>${
+      n.id === 'news' ? `<div class="nt-news">${CHANGELOG.map((c) => `• ${c}`).join('<br>')}</div>` : ''}`).join('')
+      : '<div class="nt-empty">Tudo em dia! Nenhuma novidade agora.</div>';
+    box.querySelectorAll('.nt').forEach((b) => b.addEventListener('click', () => this._notifGo(list[Number(b.dataset.i)])));
+  }
+
+  _notifGo(n) {
+    const g = this.game, m = g.meta;
+    this.showNotif(false);
+    if (n.action === 'checkin') return this.showCheckin(true);
+    if (n.action === 'missions') return this.showMissions(true);
+    if (n.action === 'hideout') return this.showHideout(true);
+    if (n.action === 'news') { m.seenVer = VERSION; g.saveMeta(); this._bell(); return this.showNotif(true); }
+    if (n.action === 'maps') { m.seenJ = m.jMax || 0; g.saveMeta(); return this.showMaps(true); }
+    if (n.action === 'char' || n.action === 'talents') {
+      this.showChars(true);
+      const i = ROSTER.indexOf(n.arg);
+      if (i >= 0 && i !== this._cs) this._csGo(i - this._cs);
+      if (n.action === 'talents') this.showTalents(n.arg);
+    }
   }
 
   // ---------------- Conta e ranking ----------------
@@ -699,6 +737,7 @@ export class UI {
   back(exit) {
     const open = ['ov-checkin', 'ov-missions', 'ov-hideout', 'ov-account', 'ov-ranking', 'ov-dev'].find((id) => !$(id).classList.contains('hidden'));
     if (!$('ov-maps').classList.contains('hidden')) return this.showMaps(false);
+    if (!$('ov-notif').classList.contains('hidden')) return this.showNotif(false);
     if (!$('ov-opts').classList.contains('hidden')) return this.showOpts(false);
     if (!$('ov-feedback').classList.contains('hidden')) return this.showFeedback(false);
     if (!$('ov-talents').classList.contains('hidden')) return this.showTalents(null);
@@ -762,6 +801,7 @@ export class UI {
     this.el.title.classList.toggle('hidden', on || this.game.state !== GS.Title);
     if (!on) { this._showBest(); return; }
     const meta = this.game.meta, jm = meta.jMax || 0, js = meta.jStars || {};
+    if ((meta.seenJ || 0) !== jm) { meta.seenJ = jm; this.game.saveMeta(); }   // aviso "mapa liberado" visto
     const total = jm + 3;                                   // vencidos + próximo + 2 bloqueados (prévia)
     const STEP = 104, PAD = 70, PADB = 120, H = PAD + PADB + STEP * (total - 1);
     const path = $('map-list'), scroll = $('jm-scroll');
@@ -827,6 +867,7 @@ export class UI {
   }
 
   _showBest() {
+    this._bell();
     const m = this.game.meta;
     const jm = m.jMax || 0;
     $('journey-map').textContent = `Mapa ${jm + 1} · ${journeyMap(jm).biome.name}`;
@@ -854,7 +895,7 @@ export class UI {
       e.coins.disabled = have < cost;
     }
     if (s === GS.Title || s === GS.GameOver) this._tutEnd();
-    if (s !== GS.Title) { this.el.chars.classList.add('hidden'); $('ov-maps').classList.add('hidden'); $('ov-talents').classList.add('hidden'); if (s !== GS.Paused) $('ov-opts').classList.add('hidden'); }
+    if (s !== GS.Title) { this.el.chars.classList.add('hidden'); $('ov-maps').classList.add('hidden'); $('ov-talents').classList.add('hidden'); $('ov-notif').classList.add('hidden'); if (s !== GS.Paused) $('ov-opts').classList.add('hidden'); }
     if (s === GS.GameOver) { clearTimeout(this._bannerT); clearTimeout(this._modT); e.banner.classList.add('hidden'); this._showOver(); }
     if (s === GS.Title) { this._renderChars(); this._showBest(); this.el.tapMusic.classList.toggle('hidden', !this.game.audio.music.paused); }
     if (s === GS.Playing || s === GS.Start) this._refreshSkills();

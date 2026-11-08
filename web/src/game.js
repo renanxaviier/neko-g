@@ -826,7 +826,7 @@ function loadSave() {
 
 // Monta o save a partir de um objeto (local ou vindo da nuvem), completando campos que faltam.
 export function buildMeta(raw) {
-  const base = { v: 1, rev: 0, scrap: 0, cyberCoins: 0, bestTime: 0, runs: 0, chars: ['gato'], selected: 'gato', nick: '', owner: '', jMax: 0, jStars: {}, weapons: {}, cxp: {}, tal: {}, tutDone: false, upgrades: { hp: 0, speed: 0, damage: 0, magnet: 0, luck: 0, crit: 0 } };
+  const base = { v: 1, rev: 0, scrap: 0, cyberCoins: 0, bestTime: 0, runs: 0, chars: ['gato'], selected: 'gato', nick: '', owner: '', jMax: 0, jStars: {}, weapons: {}, cxp: {}, tal: {}, tutDone: false, seenVer: '', seenJ: 0, upgrades: { hp: 0, speed: 0, damage: 0, magnet: 0, luck: 0, crit: 0 } };
   const data = raw && typeof raw === 'object' ? { ...base, ...raw, upgrades: { ...base.upgrades, ...(raw.upgrades || {}) } } : { ...base, upgrades: { ...base.upgrades } };
   // Multiplicadores calculados (não vão para o arquivo de save)
   for (const k of ['hpMult', 'speedMult', 'dashMult', 'damageMult', 'magnetMult', 'rareChance', 'critChance', 'critMult']) {

@@ -2,7 +2,7 @@
 // Unidades: pixels de mundo e segundos. 1 tile = 32 px.
 
 export const TILE = 32;
-export const VERSION = '0.18 teste';   // aparece na tela inicial e no feedback dos testadores
+export const VERSION = '0.19 teste';   // aparece na tela inicial e no feedback dos testadores
 export const VIEW_W = 410;          // largura visível do mundo (retrato; era 380 até a v0.17); a altura se adapta à tela
 export const CHUNK_W = 24;          // largura de um chunk em tiles
 export const CHUNK_H = 16;          // altura de um chunk em tiles (abaixo disso é chão sólido)
