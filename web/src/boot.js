@@ -63,8 +63,11 @@ export function runBoot({ renderer, audio, game }) {
   };
   requestAnimationFrame(tick);
 
-  const enter = () => {
-    if (!ready) return;
+  // O toque inteiro (encostar + soltar) fica na abertura: ela só some depois do "click" e continua bloqueando
+  // toques até sair da tela. Antes ela sumia ao encostar e o soltar caía no botão JORNADA (começava a partida).
+  const enter = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    if (!ready || ov.classList.contains('out')) return;
     ov.classList.remove('show-load');
     clearInterval(tipT);
     audio.unlock();
@@ -76,6 +79,7 @@ export function runBoot({ renderer, audio, game }) {
     window.removeEventListener('keydown', key);
   };
   const key = (e) => { if (e.key === 'Enter' || e.key === ' ') enter(); };
-  ov.addEventListener('pointerdown', enter);
+  ov.addEventListener('click', enter);
+  for (const ev of ['pointerdown', 'pointerup', 'touchstart', 'touchend']) ov.addEventListener(ev, (e) => e.stopPropagation());
   window.addEventListener('keydown', key);
 }

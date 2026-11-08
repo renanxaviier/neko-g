@@ -46,7 +46,7 @@
   /* Abertura (v0.21) */
   #ov-boot { position: absolute; inset: 0; z-index: 200; pointer-events: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
     background: radial-gradient(ellipse at 50% 40%, #2a0d44 0%, #0b0520 55%, #04020c 100%); overflow: hidden; transition: opacity .45s; }
-  #ov-boot.out { opacity: 0; pointer-events: none; }
+  #ov-boot.out { opacity: 0; }                      /* continua bloqueando toques até ser removida */
   #ov-boot::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px); }
   .bt-grid { position: absolute; left: -50%; right: -50%; bottom: -10%; height: 46%; background: repeating-linear-gradient(90deg, rgba(255,77,240,.35) 0 1px, transparent 1px 44px), repeating-linear-gradient(0deg, rgba(94,240,255,.3) 0 1px, transparent 1px 44px);
     transform: perspective(300px) rotateX(62deg); transform-origin: 50% 0; animation: btGrid 2.4s linear infinite; mask-image: linear-gradient(to top, #000 30%, transparent); -webkit-mask-image: linear-gradient(to top, #000 30%, transparent); }
