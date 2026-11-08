@@ -30,7 +30,7 @@
   .opt.on b { background: var(--cyan); color: #04121a; }
   #btn-quit.confirm { --c: #ff3b5c; color: #ff8aa0; }
   #btn-exit-app { display: none; }
-  html.native #btn-exit-app { display: block; }
+  html.native #btn-exit-app { display: flex; }
   #btn-mute { pointer-events: auto; width: 34px; height: 30px; border-radius: 8px; border: 2px solid var(--cyan); background: rgba(10,10,30,.7); color: var(--cyan); font-size: 16px; }
   #xp { position: relative; margin-top: 6px; height: 10px; border: 2px solid var(--cyan); border-radius: 6px; background: rgba(5,15,25,.7); overflow: hidden; box-shadow: 0 0 8px #5ef0ff66; }
   #xp-fill { height: 100%; width: 0; background: linear-gradient(90deg, #1fb5d6, #b9fbff); transition: width .1s; }
@@ -210,6 +210,57 @@
   .row2 { display: flex; gap: 8px; width: 100%; max-width: 340px; }
   .row2 .btn { flex: 1; min-width: 0; padding-left: 6px; padding-right: 6px; }
   .btn .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #ff3b5c; box-shadow: 0 0 8px #ff3b5c; margin-left: 6px; vertical-align: middle; animation: flicker 1.2s infinite; }
+  .mini-row { display: flex; gap: 8px; justify-content: center; width: 100%; max-width: 340px; }
+  .mini { pointer-events: auto; font: inherit; flex: 1; max-width: 80px; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--c, #b9a6ff) 50%, transparent); background: rgba(10,8,30,.7); color: #fff; font-size: 18px; }
+  .mini small { font-size: 10px; letter-spacing: 1px; opacity: .75; }
+  @media (pointer: coarse) { .no-touch { display: none; } }
+  /* Botão de personagem na tela inicial */
+  .char-chip { pointer-events: auto; font: inherit; color: #fff; display: flex; align-items: center; gap: 8px; width: 100%; max-width: 340px; padding: 4px 12px 4px 4px; border-radius: 14px;
+    border: 2px solid var(--cc, var(--pink)); background: linear-gradient(90deg, color-mix(in srgb, var(--cc, #ff4df0) 22%, rgba(10,8,30,.9)), rgba(10,8,30,.88) 60%); box-shadow: 0 0 12px color-mix(in srgb, var(--cc, #ff4df0) 60%, transparent); text-align: left; }
+  .char-chip canvas { position: static; width: 64px; height: 55px; flex: none; }
+  .char-chip .cc-txt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .char-chip small { font-size: 10px; letter-spacing: 2px; opacity: .7; }
+  .char-chip b { font-size: 18px; letter-spacing: 2px; text-shadow: 0 0 8px var(--cc, #ff4df0); }
+  .char-chip i { font-style: normal; font-size: 11px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .char-chip em { font-style: normal; font-size: 12px; font-weight: bold; color: var(--cc, var(--pink)); letter-spacing: 1px; }
+  /* Escolher personagem */
+  #ov-chars { justify-content: flex-start; gap: 8px; padding: calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 16px);
+    background: radial-gradient(ellipse at 50% 34%, color-mix(in srgb, var(--cc, #ff4df0) 28%, rgba(6,3,18,.8)) 0%, rgba(6,3,18,.93) 48%, rgba(4,2,12,.98) 100%); transition: background .4s; }
+  .cs-head { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 380px; }
+  .cs-head h2 { flex: 1; margin: 0; font-size: 17px; letter-spacing: 2px; }
+  .cs-x { pointer-events: auto; font: inherit; width: 40px; height: 40px; border-radius: 10px; border: 2px solid #8a86a8; background: rgba(10,8,30,.85); color: #fff; font-size: 18px; }
+  .cs-wallet { font-size: 14px; color: #c04dff; font-weight: bold; padding: 6px 10px; border-radius: 10px; background: rgba(40,10,60,.7); }
+  .cs-wallet b { color: #fff; }
+  .cs-stage { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 380px; flex: 1 1 auto; min-height: 150px; max-height: 48vh; pointer-events: auto; touch-action: pan-y; }
+  .cs-stage canvas { position: static; height: 100%; max-width: 76%; aspect-ratio: 32 / 30; }
+  .cs-arrow { pointer-events: auto; font: inherit; flex: none; width: 44px; height: 64px; border-radius: 12px; border: 2px solid var(--cc, var(--pink)); background: rgba(10,8,30,.7); color: #fff; font-size: 34px; line-height: 1; box-shadow: 0 0 10px color-mix(in srgb, var(--cc, #ff4df0) 50%, transparent); }
+  .cs-tag { position: absolute; top: 8%; right: 18%; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 900; letter-spacing: 2px; color: #fff; background: #ff3b5c; box-shadow: 0 0 12px #ff3b5c; transform: rotate(8deg); }
+  .cs-tag.soon { background: #6a4dff; box-shadow: 0 0 12px #6a4dff; }
+  .cs-tag.sel { background: #22c27a; box-shadow: 0 0 12px #22c27a; }
+  .cs-info { min-height: 200px; width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+  .cs-info.pop { animation: csPop .3s ease-out; }
+  @keyframes csPop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .cs-name { font-size: 30px; font-weight: 900; letter-spacing: 4px; color: #fff; text-shadow: 0 0 6px #fff, 0 0 18px var(--cc, #ff4df0); }
+  .cs-trait { font-size: 13px; color: var(--cc, var(--cyan)); font-weight: bold; letter-spacing: 1px; }
+  .cs-melee { font-size: 12px; opacity: .85; }
+  .cs-stats { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; width: 100%; margin-top: 4px; font-size: 11px; text-align: left; align-items: center; }
+  .cs-stats span { opacity: .8; letter-spacing: 1px; }
+  .cs-stats .bar { height: 7px; border-radius: 4px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .cs-stats .bar i { display: block; height: 100%; width: var(--w); background: var(--cc, var(--pink)); box-shadow: 0 0 8px var(--cc, var(--pink)); transition: width .35s; }
+  .cs-teaser { font-size: 13px; opacity: .85; text-align: center; margin: 6px auto 0; max-width: 300px; }
+  .cs-teaser small { display: block; margin-top: 8px; font-size: 11px; opacity: .6; letter-spacing: 1px; }
+  .cs-strip { display: flex; gap: 5px; justify-content: center; width: 100%; max-width: 380px; }
+  .cs-pip { pointer-events: auto; font: inherit; position: relative; flex: 1; max-width: 50px; aspect-ratio: 1; padding: 0; border-radius: 10px; border: 2px solid rgba(185,166,255,.25); background: rgba(12,8,30,.8); }
+  .cs-pip canvas { position: static; width: 100%; height: 100%; display: block; }
+  .cs-pip.cur { border-color: var(--pc); box-shadow: 0 0 10px var(--pc); transform: translateY(-3px); }
+  .cs-pip.sel::after { content: '✓'; position: absolute; top: -6px; right: -4px; font-size: 11px; width: 15px; height: 15px; line-height: 15px; border-radius: 50%; background: #22c27a; color: #fff; }
+  .cs-pip.lock::after { content: '🔒'; position: absolute; top: -6px; right: -6px; font-size: 11px; }
+  #cs-action { margin-top: auto; }
+  #cs-toast { font-size: 13px; color: #ffd0ff; padding: 6px 12px; border-radius: 10px; background: rgba(80,10,90,.7); }
+  #cs-big.inL { animation: csInL .28s ease-out; } #cs-big.inR { animation: csInR .28s ease-out; }
+  @keyframes csInL { from { opacity: 0; transform: translateX(-40px) scale(.9); } to { opacity: 1; transform: none; } }
+  @keyframes csInR { from { opacity: 0; transform: translateX(40px) scale(.9); } to { opacity: 1; transform: none; } }
+  #cs-action.nope { animation: nope .35s; }
   /* Missões e check-in */
   #sector-bar { display: flex; align-items: center; gap: 6px; margin-top: 5px; font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #fff; text-shadow: 0 0 6px var(--sc, #ff4df0); }
   #sector-bar .track { flex: 1; height: 4px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
@@ -350,7 +401,7 @@
       <div id="tap-music">toque na tela para ligar a música ♪</div>
     </div>
     <div class="bottom">
-      <div class="chars" id="chars"></div>
+      <button id="btn-char" class="char-chip"><canvas id="chip-cv" width="112" height="96"></canvas><span class="cc-txt"><small>🐾 PERSONAGEM</small><b id="chip-name">GATO</b><i id="chip-trait"></i></span><em>TROCAR ▸</em></button>
       <div id="toast" class="hidden"></div>
       <button id="btn-journey" class="btn primary pulse">▶ JORNADA <small id="journey-map"></small></button>
       <div class="row2">
@@ -361,14 +412,14 @@
         <button id="btn-hideout" class="btn" style="--c: var(--gold)">⚙ ESCONDERIJO</button>
         <button id="btn-missions" class="btn" style="--c: #c04dff">◆ MISSÕES</button>
       </div>
-      <div class="row2">
-        <button id="btn-ranking" class="btn" style="--c: #4dffa6">🏆 RANKING</button>
-        <button id="btn-account" class="btn" style="--c: var(--cyan)">👤 CONTA</button>
+      <div class="mini-row">
+        <button id="btn-ranking" class="mini">🏆<small>Ranking</small></button>
+        <button id="btn-account" class="mini">👤<small>Conta</small></button>
+        <button id="btn-dev" class="mini hidden" style="--c: #ff3b5c">🛠<small>Dev</small></button>
+        <button id="btn-exit-app" class="mini">⏻<small>Sair</small></button>
       </div>
-      <button id="btn-dev" class="btn hidden" style="--c: #ff3b5c">🛠 PAINEL DEV</button>
-      <button id="btn-exit-app" class="btn ghost">Sair do jogo</button>
       <div class="title-stats" id="title-best"></div>
-      <div class="keys">◀ ▶ mover · ATAQUE (segure) · PULO · DASH<br>Teclado: A/D · Espaço · J · Shift</div>
+      <div class="keys no-touch">◀ ▶ mover · ATAQUE (segure) · PULO · DASH<br>Teclado: A/D · Espaço · J · Shift</div>
       <div class="sub">protótipo</div>
     </div>
   </div>
@@ -425,6 +476,29 @@
       <button id="btn-checkin-open" class="btn" style="--c: #c04dff">📅 Check-in diário</button>
       <button id="btn-missions-back" class="btn primary">◀ Voltar</button>
     </div>
+  </div>
+
+  <div id="ov-chars" class="ov hidden">
+    <div class="cs-head">
+      <button id="cs-back" class="cs-x">◀</button>
+      <h2>ESCOLHER PERSONAGEM</h2>
+      <span class="cs-wallet">◆ <b id="cs-coins">0</b></span>
+    </div>
+    <div class="cs-stage" id="cs-stage">
+      <button id="cs-prev" class="cs-arrow">‹</button>
+      <canvas id="cs-big" width="480" height="450"></canvas>
+      <button id="cs-next" class="cs-arrow">›</button>
+      <div id="cs-tag" class="cs-tag hidden"></div>
+    </div>
+    <div class="cs-info" id="cs-info">
+      <div class="cs-name" id="cs-name">GATO</div>
+      <div class="cs-trait" id="cs-trait"></div>
+      <div class="cs-melee" id="cs-melee"></div>
+      <div class="cs-stats" id="cs-stats"></div>
+    </div>
+    <div class="cs-strip" id="cs-strip"></div>
+    <div id="cs-toast" class="hidden"></div>
+    <button id="cs-action" class="btn primary">SELECIONAR</button>
   </div>
 
   <div id="ov-maps" class="ov dark hidden">

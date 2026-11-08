@@ -478,7 +478,7 @@ export class Renderer {
     if (key === this._sheetKey && portalKey === this._portalKey) return;
     this._sheetKey = key; this._portalKey = portalKey;
     const keep = new Set(['core']);
-    if (key === 'title' || !info) for (const b of ['coast', 'favelas', 'porto']) for (const sh of BIOME_SHEETS[b] || []) keep.add(sh);
+    if (key === 'title' || !info) { keep.add('menu'); for (const b of ['coast', 'favelas', 'porto']) for (const sh of BIOME_SHEETS[b] || []) keep.add(sh); }
     else {
       keep.add('boss');
       for (const sh of BIOME_SHEETS[info.biome.id] || []) keep.add(sh);
@@ -725,15 +725,19 @@ export class Renderer {
   }
 
   // Miniatura animada de personagem (cartões da tela inicial)
+  // locked: true = cinza escuro; ou um filtro CSS de canvas (string)
   drawThumb(canvas, anim, t, locked) {
     const fr = this._frame(anim, t);
+    if (fr && canvas._fr === fr && canvas._lk === locked) return;     // mesmo quadro: não redesenha
+    canvas._fr = fr; canvas._lk = locked;
     const x = canvas.getContext('2d');
     x.clearRect(0, 0, canvas.width, canvas.height);
     if (!fr) return;
     const k = Math.min((canvas.height * 0.86) / fr[3], (canvas.width * 0.9) / fr[2]);
     x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
-    if (locked) x.filter = 'grayscale(1) brightness(0.45)';
-    x.drawImage(this._img(fr.s), fr[0], fr[1], fr[2], fr[3], canvas.width / 2 - fr[4] * k, canvas.height - 4 - fr[5] * k, fr[2] * k, fr[3] * k);
+    if (locked) x.filter = typeof locked === 'string' ? locked : 'grayscale(1) brightness(0.45)';
+    const img = this._img(fr.s);
+    if (img) x.drawImage(img, fr[0], fr[1], fr[2], fr[3], canvas.width / 2 - fr[4] * k, canvas.height - 4 - fr[5] * k, fr[2] * k, fr[3] * k);
     x.filter = 'none';
   }
 

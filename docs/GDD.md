@@ -288,13 +288,17 @@ Arte conceitual em `assets/concept/personagens_jogaveis.jpg`. Todos têm o kit b
 | Gato | 2 pulos no ar | Garras Elétricas (cortes rosa/ciano) | Garras | padrão | grátis |
 | Guaxinim | Plana com paraquedas (segurar PULO caindo) | Lâmina Hacker (−10% dano, +10% alcance) | Garras + Drones Orbitais | −10% HP, +30% ímã | ◆ 120 |
 | Pug | Queda pesada: DASH no ar → mergulho com onda de choque em área | Soco de Energia (+35% dano, −15% alcance) | Garras | +30% HP, um pouco mais lento | ◆ 160 |
-Desbloqueio com Cyber-Moedas na tela inicial (toque no cartão). Preços **[PROPOSTA]**.
+Desbloqueio com Cyber-Moedas na tela **Escolher personagem** (v0.15). Preços **[PROPOSTA]**.
 **Atenção:** o pulo duplo agora é de **todos** os personagens (regra do produtor), então o traço do Gato precisa ser outro (ex.: 2 pulos aéreos ou dash mais longo) **[EM ABERTO]**.
 
 ---
 
 ## 8. Telas
 Abertura → Esconderijo (hub: jogar, Laboratório, personagens, loja, missões, configurações) → Partida (HUD: HP, barra de XP/nível, tempo, pontuação, skills ativas) → Level Up (3 cartas) → Pausa → Protocolo de Backup → Fim de partida (pontuação, recorde, Sucata ganha, missões concluídas, jogar de novo).
+
+**Tela inicial (v0.15):** limpa — botão do personagem atual (pedestal animado, nome, traço, "TROCAR ▸"), ▶ JORNADA, ∞ INFINITO · 🗺 MAPAS, ⚙ ESCONDERIJO · ◆ MISSÕES e uma fileira de ícones pequenos (Ranking, Conta, Dev, Sair).
+
+**Escolher personagem (v0.15):** pedestal grande animado (3 quadros, folha `menu`), setas ‹ › e deslizar o dedo para trocar, fileira com os 7 personagens (✓ em uso, 🔒 bloqueado, cinza = em breve). Mostra nome, traço, ataque básico e barras de Vida, Dano, Alcance, Velocidade e Ímã. Botão: SELECIONAR / ◆ preço · DESBLOQUEAR / ▶ JOGAR (se já está em uso, abre a Jornada). Coelho, Macaco, Tatu e Corvo aparecem como **EM BREVE** com o traço proposto **[PROPOSTA]** até serem integrados.
 
 **Pausa (v0.13):** botão ❚❚ no HUD, tecla Esc/P, botão "voltar" do Android e o app indo para o segundo plano pausam a partida (não pausa durante a transição de setor). Menu: Continuar (volta com 0,6 s de invencibilidade) · Som e música · Tremor de tela · Números de dano (salvos no aparelho) · **Encerrar partida** (segundo toque confirma; conta como fim de partida: guarda Sucata e recorde). Na tela inicial do app Android há **Sair do jogo**; o "voltar" na tela inicial também fecha o app.
 

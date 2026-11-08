@@ -276,6 +276,9 @@ ANIMS = {
     'mecha.atk':      (f('aq_mecha', 4, 5), 8, True, (218, 80), 'feet'),
     'mecha.hurt':     (f('aq_mecha', 6, 7), 8, True, (218, 80), 'feet'),
     'mecha.death':    (f('aq_mecha', 8, 9, 10), 1, False, (218, 80), 'feet'),
+    # ---- v0.15: personagens no pedestal (tela Escolher personagem; quadros de tools/build_menu.py) ----
+    **{f'menu.{c}': (f(f'menu_{c}', 0, 1, 2), 4, True, (100, 16.2 if c == 'coelho' else 32), 'bottom')
+       for c in ('gato', 'guaxinim', 'pug', 'coelho', 'macaco', 'tatu', 'corvo')},
 }
 
 # Peças de cenário geradas por build_biomes.py que ainda não estão declaradas acima (folha 2 em diante)
@@ -289,6 +292,8 @@ def anchor(img, mode, body_h=None):
     a = np.array(img)[..., 3].astype(np.float32) / 255
     h, w = a.shape
     ys, xs = np.mgrid[0:h, 0:w]
+    if mode == 'bottom':                   # base do quadro, no meio (pedestais da tela de personagens)
+        return w / 2, float(h)
     if mode == 'top':                      # pés = topo + altura do corpo (ignora jatos/efeitos abaixo)
         top = a[: max(1, int(body_h * 0.45))]
         ys2, xs2 = np.mgrid[0:top.shape[0], 0:w]
@@ -343,6 +348,7 @@ for k, (pos0, bid) in enumerate(marks):
 def sheet_of(name):
     pre = name.split('.')[0]
     if pre in BOSSES: return 'boss'
+    if pre == 'menu': return 'menu'                         # só na tela de personagens
     if pre in ('prop', 'deco'):
         if name not in uses: return None                    # peça que nenhum cenário usa: fica de fora
         b = uses[name]

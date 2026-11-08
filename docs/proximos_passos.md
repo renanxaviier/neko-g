@@ -27,7 +27,7 @@
 ## Combinado para a próxima sessão
 1. **Mais regras e objetivos** na Jornada (novos tipos de fase, fase elite, eventos).
 2. **Interface de usuário melhor** (HUD e telas).
-3. **Menu do jogo melhor** (tela inicial / hub). Pedido do produtor: os personagens saem da tela inicial e vão para uma tela própria **"Escolher personagem"** (a tela inicial fica mais limpa).
+3. ~~**Menu do jogo melhor**~~ — **feito em 08/11** (v0.15): tela inicial limpa + tela **Escolher personagem** com os pedestais animados (GDD §8).
 4. **Mapa de progressão da Jornada** (caminho visual com os mapas e fases, bifurcações).
 5. **Armas por personagem** (desenho + implementação: compra/evolução no Esconderijo, troca o ataque básico e o efeito).
 6. Integrar os novos personagens (quando chegarem os quadros que faltam) e os 3 novos chefões.

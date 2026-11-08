@@ -3,7 +3,7 @@
 import { GS } from './game.js';
 import { RUN } from './config.js';
 import { UPGRADES, upgradeCost, MAX_UPGRADE } from './meta.js';
-import { CHARS, CHAR_ORDER } from './chars.js';
+import { CHARS, ROSTER, charInfo } from './chars.js';
 import { errorText } from './cloud.js';
 import { exitApp } from './platform.js';
 import { journeyMap, goalText, goalIntro } from './journey.js';
@@ -30,7 +30,7 @@ export class UI {
       revive: $('ov-revive'), count: $('revive-count'), ring: $('revive-ring'), ad: $('btn-ad'), coins: $('btn-coins'), decline: $('btn-decline'), adSim: $('ad-sim'), adLeft: $('ad-left'),
       over: $('ov-over'), overStats: $('over-stats'), restart: $('btn-restart'),
       controls: $('controls'), badge: $('lv-badge'), hideout: $('ov-hideout'), upgrades: $('upgrades'), walletScrap: $('wallet-scrap'), coinIc: $('coin-ic'), banner: $('biome-banner'), bannerName: $('biome-name'), logo: $('logo'), tapMusic: $('tap-music'),
-      thumbs: [], chars: $('chars'), toast: $('toast'),
+      thumbs: [], toast: $('toast'), chars: $('ov-chars'), csBig: $('cs-big'), chip: $('btn-char'),
     };
     this._last = {};
     this._cardsReadyAt = 0;
@@ -38,6 +38,7 @@ export class UI {
     $('btn-start').addEventListener('click', () => this.h.start({ mode: 'endless' }));
     $('btn-journey').addEventListener('click', () => this.h.start({ mode: 'journey', map: game.meta.jMax || 0 }));
     $('btn-maps').addEventListener('click', () => this.showMaps(true));
+    this._initCharSelect();
     $('btn-maps-back').addEventListener('click', () => this.showMaps(false));
     this.el.restart.addEventListener('click', () => this.h.start((game.lastResult && game.lastResult.next) || { mode: 'endless' }));
     $('btn-menu').addEventListener('click', () => game.toTitle());
@@ -312,38 +313,123 @@ export class UI {
   }
 
   // ---------------- Personagens ----------------
+  // Tela inicial: só um botão com o personagem atual. A escolha fica na tela "Escolher personagem".
   _renderChars() {
-    const g = this.game, m = g.meta;
-    this.el.chars.innerHTML = '';
-    this.el.thumbs = [];
-    for (const id of CHAR_ORDER) {
-      const ch = CHARS[id];
-      const owned = m.chars.includes(id);
-      const card = document.createElement('button');
-      card.className = 'pc' + (m.selected === id ? ' sel' : '') + (owned ? '' : ' lock');
-      card.innerHTML = `<canvas width="120" height="90"></canvas><b>${ch.name}</b><small>${owned ? ch.trait : `◆ ${ch.price} Cyber-Moedas`}</small>`;
-      const c = card.querySelector('canvas');
-      c.dataset.anim = ch.prefix + '.idle';
-      if (!owned) c.dataset.locked = '1';
-      this.el.thumbs.push(c);
-      card.addEventListener('click', () => {
-        if (owned) { g.selectChar(id); g.audio.sfx('select'); }
-        else if (g.unlockChar(id)) this._toast(`${ch.name} desbloqueado!`);
-        else {
-          card.classList.add('nope');
-          this._toast(`Faltam ◆ ${ch.price - m.cyberCoins} Cyber-Moedas (missões e check-in diário)`);
-          setTimeout(() => card.classList.remove('nope'), 400);
-          return;
-        }
-        this._renderChars();
-        this._showBest();
-      });
-      this.el.chars.appendChild(card);
+    const g = this.game, ch = CHARS[g.meta.selected] || CHARS.gato;
+    $('chip-name').textContent = ch.name;
+    $('chip-trait').textContent = ch.trait;
+    this.el.chip.style.setProperty('--cc', ch.color);
+    const c = $('chip-cv');
+    c.dataset.anim = 'menu.' + ch.id;
+    this.el.thumbs = [c];
+  }
+
+  _initCharSelect() {
+    this.el.chip.addEventListener('click', () => { this.game.audio.sfx('select'); this.showChars(true); });
+    $('cs-back').addEventListener('click', () => this.showChars(false));
+    $('cs-prev').addEventListener('click', () => this._csGo(-1));
+    $('cs-next').addEventListener('click', () => this._csGo(1));
+    $('cs-action').addEventListener('click', () => this._csAction());
+    // Deslizar o dedo no palco troca de personagem
+    const st = $('cs-stage');
+    let x0 = null;
+    st.addEventListener('pointerdown', (e) => { if (e.target === st || e.target === this.el.csBig) x0 = e.clientX; });
+    st.addEventListener('pointerup', (e) => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0; x0 = null;
+      if (Math.abs(dx) > 40) this._csGo(dx < 0 ? 1 : -1);
+    });
+    st.addEventListener('pointercancel', () => { x0 = null; });
+    // Fileira com todos os personagens
+    const strip = $('cs-strip');
+    this._pips = ROSTER.map((id, i) => {
+      const b = document.createElement('button');
+      b.className = 'cs-pip';
+      b.style.setProperty('--pc', charInfo(id).color);
+      b.innerHTML = '<canvas width="64" height="64"></canvas>';
+      b.addEventListener('click', () => { if (i !== this._cs) this._csGo(i - this._cs); });
+      strip.appendChild(b);
+      return b;
+    });
+  }
+
+  showChars(on) {
+    this.el.chars.classList.toggle('hidden', !on);
+    this.el.title.classList.toggle('hidden', on || this.game.state !== GS.Title);
+    if (on) {
+      this._cs = Math.max(0, ROSTER.indexOf(this.game.meta.selected));
+      this._csRender(0);
+    } else { this._renderChars(); this._showBest(); }
+  }
+
+  _csGo(d) {
+    this._cs = (this._cs + d + ROSTER.length) % ROSTER.length;
+    this.game.audio.sfx('select');
+    this._csRender(d);
+  }
+
+  _csState(id) {
+    const m = this.game.meta;
+    if (!CHARS[id]) return 'soon';
+    if (!m.chars.includes(id)) return 'lock';
+    return m.selected === id ? 'sel' : 'own';
+  }
+
+  _csRender(dir) {
+    const m = this.game.meta, id = ROSTER[this._cs], ch = charInfo(id), st = this._csState(id);
+    this.el.chars.style.setProperty('--cc', ch.color);
+    $('cs-coins').textContent = m.cyberCoins;
+    $('cs-name').textContent = ch.name;
+    $('cs-trait').textContent = ch.trait;
+    const tag = $('cs-tag');
+    tag.className = 'cs-tag ' + st;
+    tag.textContent = st === 'soon' ? 'EM BREVE' : st === 'lock' ? '🔒 BLOQUEADO' : st === 'sel' ? '✓ EM USO' : '';
+    tag.classList.toggle('hidden', st === 'own');
+    if (ch.soon) {
+      $('cs-melee').textContent = '';
+      $('cs-stats').innerHTML = `<div class="cs-teaser" style="grid-column: 1 / -1">${ch.teaser}<small>ARTE PRONTA · JOGABILIDADE EM DESENVOLVIMENTO</small></div>`;
+    } else {
+      $('cs-melee').textContent = `${ch.melee.icon} Ataque: ${ch.melee.name}`;
+      const P = ch.player || {};
+      const rows = [
+        ['VIDA', ch.hpMult / 1.4], ['DANO', ch.melee.dmg / 1.4], ['ALCANCE', ch.melee.range / 1.2],
+        ['VELOCIDADE', (P.maxRunSpeed || 225) / 240], ['ÍMÃ', ch.magnetMult / 1.4],
+      ];
+      $('cs-stats').innerHTML = rows.map(([k, v]) => `<span>${k}</span><div class="bar"><i style="--w:${Math.round(Math.min(1, v) * 100)}%"></i></div>`).join('');
+    }
+    const a = $('cs-action');
+    a.disabled = st === 'soon';
+    a.classList.toggle('pulse', st === 'own');
+    a.textContent = st === 'soon' ? 'EM BREVE' : st === 'lock' ? `◆ ${ch.price} · DESBLOQUEAR` : st === 'sel' ? '▶ JOGAR' : 'SELECIONAR';
+    this._pips.forEach((b, i) => {
+      const s2 = this._csState(ROSTER[i]);
+      b.className = 'cs-pip' + (i === this._cs ? ' cur' : '') + (s2 === 'sel' ? ' sel' : '') + (s2 === 'lock' ? ' lock' : '');
+    });
+    if (dir) {
+      const big = this.el.csBig, info = $('cs-info');
+      big.classList.remove('inL', 'inR'); info.classList.remove('pop'); void big.offsetWidth;
+      big.classList.add(dir > 0 ? 'inR' : 'inL'); info.classList.add('pop');
     }
   }
 
+  _csAction() {
+    const g = this.game, m = g.meta, id = ROSTER[this._cs], ch = CHARS[id], st = this._csState(id);
+    if (st === 'soon') return;
+    if (st === 'sel') { this.showChars(false); return this.h.start({ mode: 'journey', map: m.jMax || 0 }); }
+    if (st === 'own') { g.selectChar(id); g.audio.sfx('select'); }
+    else if (g.unlockChar(id)) this._toast(`${ch.name} desbloqueado!`);
+    else {
+      const a = $('cs-action');
+      a.classList.add('nope');
+      this._toast(`Faltam ◆ ${ch.price - m.cyberCoins} Cyber-Moedas (missões e check-in diário)`);
+      setTimeout(() => a.classList.remove('nope'), 400);
+      return;
+    }
+    this._csRender(0);
+  }
+
   _toast(msg) {
-    const t = this.el.toast;
+    const t = this.el.chars.classList.contains('hidden') ? this.el.toast : $('cs-toast');
     t.textContent = msg;
     t.classList.remove('hidden');
     clearTimeout(this._toastT);
@@ -423,6 +509,7 @@ export class UI {
   back(exit) {
     const open = ['ov-checkin', 'ov-missions', 'ov-hideout', 'ov-account', 'ov-ranking', 'ov-dev'].find((id) => !$(id).classList.contains('hidden'));
     if (!$('ov-maps').classList.contains('hidden')) return this.showMaps(false);
+    if (!this.el.chars.classList.contains('hidden')) return this.showChars(false);
     if (open === 'ov-dev') return this.showDev(false);
     if (open === 'ov-account') return this.showAccount(false);
     if (open === 'ov-ranking') return this.showRanking(false);
@@ -663,7 +750,15 @@ export class UI {
       if (!e.hideout.classList.contains('hidden') && g.renderer) g.renderer.drawCentered(e.coinIc, 'it.coin', performance.now() / 1000);
       e.logo.style.setProperty('--b', g.audio.pulse().toFixed(3));
       const t = performance.now() / 1000;
-      if (g.renderer) e.thumbs.forEach((c, i) => g.renderer.drawThumb(c, c.dataset.anim, t + i * 0.37, !!c.dataset.locked));
+      if (!g.renderer) return;
+      if (!e.chars.classList.contains('hidden')) {
+        const R = g.renderer, id = ROSTER[this._cs], st = this._csState(id);
+        R.drawThumb(e.csBig, 'menu.' + id, t, st === 'soon' ? 'saturate(0.55) brightness(0.75)' : false);
+        this._pips.forEach((b, i) => {
+          const s2 = this._csState(ROSTER[i]);
+          R.drawThumb(b.firstChild, 'menu.' + ROSTER[i], i === this._cs ? t : 0, s2 === 'soon' ? 'grayscale(1) brightness(0.35)' : s2 === 'lock' ? 'grayscale(0.7) brightness(0.6)' : false);
+        });
+      } else e.thumbs.forEach((c, i) => g.renderer.drawThumb(c, c.dataset.anim, t + i * 0.37, !!c.dataset.locked));
       return;
     }
     this._updateControls();
