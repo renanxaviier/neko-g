@@ -364,6 +364,7 @@ recompensa diária · missão concluída · novidades da versão (some ao tocar)
 ---
 
 ## 9. Questões em aberto (resumo)
+- **PvP em salas (Rinha Neon, estilo Grand Chase):** proposta completa em `docs/pvp.md` **[PROPOSTA]** (08/11/2026).
 1. ~~Engine~~ → **web (HTML5 + JavaScript)**, empacotado para Android (decidido em 07/11; a Unity foi descartada).
 2. ~~Formato do cenário~~ → **arena infinita horizontal em chunks** (decidido, seção 3.1).
 3. Dash direcional ou só horizontal.
