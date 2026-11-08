@@ -1,0 +1,41 @@
+rules_version = '2';
+// Regras do Cloud Firestore do Neon Paws (cole em Firestore Database → Regras → Publicar).
+// players/{uid}: progresso de cada jogador (só ele lê e escreve).
+// leaderboard/{uid}: ranking global (todos leem; cada um escreve só o próprio e nunca piora o recorde).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn(uid) { return request.auth != null && request.auth.uid == uid; }
+    function validNick(n) { return n is string && n.size() >= 3 && n.size() <= 16; }
+
+    match /players/{uid} {
+      allow read: if signedIn(uid);
+      allow create, update: if signedIn(uid)
+        && request.resource.data.keys().hasOnly(['save', 'rev', 'nick', 'updatedAt'])
+        && request.resource.data.save is string && request.resource.data.save.size() < 20000
+        && request.resource.data.rev is int
+        && request.resource.data.nick is string && request.resource.data.nick.size() <= 16
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if signedIn(uid);
+    }
+
+    // admins/{uid}: contas de desenvolvedor (master). Criado só pelo Console do Firebase; o app apenas lê o próprio.
+    match /admins/{uid} {
+      allow read: if signedIn(uid);
+      allow write: if false;
+    }
+
+    match /leaderboard/{uid} {
+      allow read: if true;
+      allow create, update: if signedIn(uid)
+        && request.resource.data.keys().hasOnly(['nick', 'best', 'char', 'kills', 'updatedAt'])
+        && validNick(request.resource.data.nick)
+        && request.resource.data.best is int && request.resource.data.best >= 0 && request.resource.data.best <= 36000
+        && request.resource.data.char in ['gato', 'guaxinim', 'pug']
+        && request.resource.data.kills is int && request.resource.data.kills >= 0
+        && request.resource.data.updatedAt == request.time
+        && (resource == null || request.resource.data.best >= resource.data.best);
+      allow delete: if signedIn(uid);
+    }
+  }
+}

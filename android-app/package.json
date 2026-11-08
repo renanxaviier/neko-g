@@ -1,0 +1,24 @@
+{
+  "name": "neko-g-android",
+  "version": "0.6.0",
+  "private": true,
+  "description": "Neko G empacotado como app Android com Capacitor",
+  "type": "module",
+  "scripts": {
+    "prepare:android": "node scripts/prepare.mjs",
+    "open": "npx cap open android",
+    "apk": "node scripts/prepare.mjs && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/status-bar": "^8.0.0",
+    "@capacitor-community/admob": "^8.0.0",
+    "@capacitor-firebase/authentication": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.0.0"
+  }
+}

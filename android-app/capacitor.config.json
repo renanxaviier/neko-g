@@ -1,0 +1,19 @@
+{
+  "appId": "com.nekog.game",
+  "appName": "Neko G",
+  "webDir": "www",
+  "backgroundColor": "#07051a",
+  "android": {
+    "backgroundColor": "#07051a",
+    "allowMixedContent": false,
+    "captureInput": true
+  },
+  "plugins": {
+    "FirebaseAuthentication": {
+      "skipNativeAuth": true,
+      "providers": [
+        "google.com"
+      ]
+    }
+  }
+}
