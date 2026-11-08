@@ -341,6 +341,8 @@ Abertura → Esconderijo (hub: jogar, Laboratório, personagens, loja, missões,
 
 **Escolher personagem (v0.15):** pedestal grande animado (3 quadros, folha `menu`), setas ‹ › e deslizar o dedo para trocar, fileira com os 7 personagens (✓ em uso, 🔒 bloqueado, cinza = em breve). Mostra nome, traço, ataque básico e barras de Vida, Dano, Alcance, Velocidade e Ímã. Botão: SELECIONAR / ◆ preço · DESBLOQUEAR / ▶ JOGAR (se já está em uso, abre a Jornada). Coelho, Macaco, Tatu e Corvo aparecem como **EM BREVE** com o traço proposto **[PROPOSTA]** até serem integrados.
 
+**Abertura (v0.21):** vinheta "RX GAMES apresenta" (≈2,6 s) → logo NEKO G acendendo em neon → "Toque para começar". Enquanto isso o jogo carrega de verdade: folhas de sprites (núcleo, menu, chefões, cenários da tela inicial), camadas próximas e texturas dos cenários, música e fontes; depois desenha cada imagem uma vez na GPU por ~20 quadros (sem engasgo quando aparecem no jogo). A barra de carregamento e as dicas só aparecem se ainda faltar algo depois da vinheta; limite de 12 s (segue mesmo assim). O toque libera o som e começa a música da tela inicial. Código em `web/src/boot.js`.
+
 **Notificações (v0.19) [PROPOSTA]:** nada abre sozinho ao entrar no jogo (antes o check-in diário abria em janela). Um **sino** no canto da tela inicial mostra quantos avisos há e balança quando há novidade; tocar abre a lista. Cada aviso leva direto à tela certa e some quando o jogador age:
 recompensa diária · missão concluída · novidades da versão (some ao tocar) · mapa novo liberado · pontos de talento · arma que dá para comprar/evoluir (personagem atual) · upgrade possível no Laboratório · personagem que dá para liberar. Lógica em `web/src/notify.js` (avisos calculados a partir do save).
 

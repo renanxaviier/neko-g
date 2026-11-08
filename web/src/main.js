@@ -6,6 +6,7 @@ import { AudioSys } from './audio.js';
 import { Game, GS } from './game.js';
 import { Renderer } from './render.js';
 import { UI } from './ui.js';
+import { runBoot } from './boot.js';
 import { initPlatform } from './platform.js';
 import { Cloud } from './cloud.js';
 import { setSaveHook } from './game.js';
@@ -41,6 +42,7 @@ const start = (opts) => {
 };
 game.ui = new UI(game, { start, restart: start });
 game.ui.onState(GS.Title);
+runBoot({ renderer, audio, game });              // abertura: carrega tudo antes de liberar a tela inicial
 
 // Conta e nuvem (Firebase; sem configuração = modo demonstração). O jogo não espera: começa com o save local.
 const cloud = new Cloud(game);

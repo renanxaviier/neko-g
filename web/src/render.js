@@ -448,6 +448,27 @@ export class Renderer {
     }
   }
 
+  // Abertura (boot.js): o que precisa estar pronto antes da tela inicial. Devolve [pronto, total].
+  // Também "aquece" a GPU desenhando cada imagem uma vez (o envio da textura acontece aqui, não no meio do jogo).
+  bootStatus() {
+    const sheets = ['core', 'menu', 'boss', ...['coast', 'favelas', 'porto'].flatMap((b) => BIOME_SHEETS[b] || [])];
+    const near = ['coast', 'favelas', 'porto'];
+    let ok = 0, total = 0;
+    for (const n of sheets) { total++; if (this._sheet(n)) ok++; }
+    for (const b of near) { total++; if (this._near(b)) ok++; }
+    for (const id of Object.keys(BIOME_ART)) { total++; if (this.bioTex[id]) ok++; }
+    return [ok, total];
+  }
+
+  warmGpu() {
+    const x = this.ctx;
+    x.save(); x.globalAlpha = 0.01;
+    for (const S of Object.values(this.sheets)) if (S.img) x.drawImage(S.img, 0, 0, 2, 2, 0, 0, 1, 1);
+    for (const n of Object.values(this.bioNear)) if (n.ready) x.drawImage(n.ready, 0, 0, 2, 2, 0, 0, 1, 1);
+    for (const t of Object.values(this.bioTex)) for (const c of Object.values(t)) x.drawImage(c, 0, 0, 1, 1, 0, 0, 1, 1);
+    x.restore();
+  }
+
   // Carrega uma folha (uma vez) e devolve o bitmap, ou null enquanto não chegou
   _sheet(name) {
     let S = this.sheets[name];
