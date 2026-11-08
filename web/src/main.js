@@ -77,6 +77,8 @@ const fpsMon = { t: 0, n: 0, fps: 60, hz: 60, good: 0, target: 1000 / 60, slowSh
 window.__fps = fpsMon;
 const ivl = new Float32Array(1024);
 function watchFps(dtMs) {
+  // Contagem do início de fase = carregamento: essas travadas não contam (senão a resolução caía à toa no começo)
+  if (game.introT > 0) { fpsMon.t = 0; fpsMon.n = 0; return; }
   fpsMon.t += dtMs;
   if (fpsMon.n < ivl.length) ivl[fpsMon.n] = dtMs;
   fpsMon.n++;

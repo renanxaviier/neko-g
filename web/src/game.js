@@ -130,7 +130,8 @@ export class Game {
       this.introT -= dt; this.introWait += dt;
       const R = this.renderer, bid = this.sectorInfo && this.sectorInfo.biome.id;
       if (R) R.warmGpu();                              // envia as imagens do cenário para a GPU agora, não no meio da ação
-      if (this.introT <= 0.3 && R && bid && !R.sceneReady(bid) && this.introWait < this.introMax + 2) this.introT = 0.3;   // ainda carregando: segura
+      this.introHold = false;
+      if (this.introT <= 1 && R && bid && !R.sceneReady(bid) && this.introWait < this.introMax + 3) { this.introT = 1; this.introHold = true; }   // ainda carregando: segura antes do 1
       return;
     }
     this.time += dt;
@@ -364,7 +365,7 @@ export class Game {
   }
 
   // Mapa vencido: bônus de Sucata (e Cyber-Moedas na 1ª vez) e libera o próximo
-  startIntro(t) { this.introT = this.introMax = t; this.introWait = 0; }
+  startIntro(t) { this.introT = this.introMax = t; this.introWait = 0; this.introHold = false; }
 
   // Dificuldade proporcional à força (Jornada): excesso de nível sobre quem começou o mapa do zero
   _adapt() {

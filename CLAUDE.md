@@ -39,6 +39,7 @@ Ver seção 9 do `docs/GDD.md`.
 | `art-audio-director` | Estilo neon, legibilidade, sprites, VFX, música e SFX |
 | `backend-liveops` | Save, carteira de moedas, validação de compras, missões, placar, analytics, config remota |
 | `qa-balance-tester` | Testes, bugs, performance, balanceamento de partida e economia |
+| `web-wiki` | Site/wiki do jogo (história, personagens, monstros, jogabilidade, download do APK) em `site/` |
 
 ## Convenções
 - Documentação e comentários em português (BR); identificadores de código em inglês.

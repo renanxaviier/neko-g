@@ -16,6 +16,11 @@ Dados no Firestore:
 - `players/{uid}`: `save` (o JSON do save), `rev`, `nick`, `updatedAt`
 - `leaderboard/{uid}`: `nick`, `best` (segundos), `char`, `kills`, `updatedAt`
 
+## Situação (08/11/2026)
+Projeto **neko-g** configurado pelo console: login Anônimo, Google e E-mail/senha ativos; app Android `com.nekog.game` com a SHA-1 da chave de teste; app Web "Neko G Web" (valores em `web/src/firebaseConfig.js`); Firestore em `southamerica-east1` com as regras de `firestore.rules` publicadas; `android-app/google-services.json` com os clientes OAuth (Android e Web).
+- Falta: criar a conta master no jogo e cadastrar o UID dela em `admins/{uid}` (pelo console do Firestore).
+- No navegador sem acesso à internet (ex.: protótipo no Claude), o jogo cai para o **modo demonstração**. No app Android sem internet, fica OFFLINE com o save local.
+
 ## Passo a passo para ligar o Firebase de verdade
 1. Entre em https://console.firebase.google.com e crie um projeto (por exemplo, "Neko G"). O Google Analytics é opcional.
 2. **Authentication → Começar → Método de login**: ative **Anônimo**, **Google** (escolha o e-mail de suporte) e **E-mail/senha**.

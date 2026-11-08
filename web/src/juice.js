@@ -209,7 +209,8 @@ export class Juice {
     if (this.glitchT > 0) {
       const k = this.glitchT / this.glitchMax, n = 3 + Math.round(4 * k);
       ctx.save();
-      for (let i = 0; i < n; i++) {
+      // copiar faixas da própria tela é caro em celular simples: só com qualidade alta (senão ficam só as linhas neon)
+      for (let i = 0; q >= 0.7 && i < n; i++) {
         const y = Math.random() * H, h = (6 + Math.random() * 26) * s * 0.5, dx = (Math.random() - 0.5) * 22 * s * k;
         ctx.drawImage(cv, 0, y, W, h, dx, y, W, h);
       }

@@ -275,6 +275,11 @@ export class Cloud {
       await this.backend.init((u) => this._onUser(u));
     } catch (e) {
       console.warn('[cloud] indisponível', e);
+      // Fora do app (ex.: protótipo no navegador que bloqueia rede externa): cai para a demonstração local
+      const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+      if (this.backend.mode === 'firebase' && !native) {
+        try { this.backend = new DemoBackend(); this.mode = 'demo'; await this.backend.init((u) => this._onUser(u)); return; } catch { /* segue offline */ }
+      }
       this.mode = 'offline';
       this.status = AUTH_ERRORS.offline;
       this._emit();

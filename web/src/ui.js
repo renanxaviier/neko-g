@@ -638,15 +638,22 @@ export class UI {
     this._refreshOpts();
   }
 
-  // Início de fase: fundo escuro que clareia + "PREPARE-SE…" → "VAI!" (o jogo fica parado enquanto carrega)
+  // Início de fase: contagem 3-2-1 → "VAI!" com o jogo parado enquanto carrega (tela escura no começo, depois um véu)
   _stageFade() {
     const g = this.game, el = $('stage-fade'), t = g.introT;
     if (!(t > -0.45)) { if (!el.classList.contains('hidden')) el.classList.add('hidden'); return; }
     el.classList.remove('hidden');
-    const k = Math.max(0, Math.min(1, t / (g.introMax || 1)));
-    el.style.background = `rgba(5,3,15,${(t > 0 ? 0.25 + 0.75 * k : 0).toFixed(3)})`;
-    const b = $('stage-go'), go = t <= 0.25;
-    if (go !== b.classList.contains('go')) { b.classList.toggle('go', go); b.textContent = go ? 'VAI!' : 'PREPARE-SE…'; }
+    // escuro no começo (carregando), depois clareia até um véu leve para o jogador ver a fase durante a contagem
+    const e = (g.introMax || 1) - t, D = RUN.introDark;
+    const a = t <= 0 ? 0 : e < D ? 1 : Math.max(0.3, 1 - ((e - D) / 0.7) * 0.7);
+    el.style.background = `rgba(5,3,15,${a.toFixed(3)})`;
+    const b = $('stage-go');
+    const txt = t <= 0 ? 'VAI!' : g.introHold ? 'CARREGANDO…' : String(Math.ceil(t));
+    if (txt !== b.textContent) {
+      b.textContent = txt;
+      b.className = t <= 0 ? 'go' : g.introHold ? '' : 'num';
+      b.style.animation = 'none'; void b.offsetWidth; b.style.animation = '';   // reinicia o "pop" a cada número
+    }
     b.style.opacity = t > 0 ? 1 : Math.max(0, 1 + t / 0.45).toFixed(2);
     if (t <= 0 && g.introT > -1) g.introT -= 1 / 60;   // contagem do "VAI!" sumindo (o jogo já está rodando)
   }

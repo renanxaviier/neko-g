@@ -46,6 +46,8 @@
   /* Início de fase (v0.22): tela clareando com tudo parado */
   #stage-fade { position: absolute; inset: 0; z-index: 30; pointer-events: none; display: flex; align-items: center; justify-content: center; background: #05030f; }
   #stage-fade b { font-size: 26px; font-weight: 900; letter-spacing: 6px; color: #fff; text-shadow: 0 0 10px #5ef0ff, 0 0 26px #5ef0ff; }
+  #stage-fade b.num { font-size: 64px; color: #fff; text-shadow: 0 0 10px #5ef0ff, 0 0 30px #5ef0ff; animation: numPop .9s ease-out both; }
+  @keyframes numPop { 0% { transform: scale(1.9); opacity: 0; } 18% { transform: scale(1); opacity: 1; } 75% { opacity: 1; } 100% { transform: scale(.85); opacity: .35; } }
   #stage-fade b.go { font-size: 46px; color: #fff; text-shadow: 0 0 10px #ff4df0, 0 0 30px #ff4df0; animation: goPop .45s cubic-bezier(.2,1.6,.4,1); }
   @keyframes goPop { from { transform: scale(2.2); opacity: 0; } to { transform: none; opacity: 1; } }
   /* Abertura (v0.21) */
@@ -810,7 +812,7 @@
     </div>
   </div>
 
-  <div id="stage-fade" class="hidden"><b id="stage-go">PREPARE-SE…</b></div>
+  <div id="stage-fade" class="hidden"><b id="stage-go">3</b></div>
   <div id="fb-toast" class="hidden"></div>
   <div id="tut" class="tut hidden"><span id="tut-text"></span><small id="tut-step"></small></div>
 

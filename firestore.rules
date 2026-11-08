@@ -1,5 +1,5 @@
 rules_version = '2';
-// Regras do Cloud Firestore do Neon Paws (cole em Firestore Database → Regras → Publicar).
+// Regras do Cloud Firestore do Neko G (cole em Firestore Database → Regras → Publicar).
 // players/{uid}: progresso de cada jogador (só ele lê e escreve).
 // leaderboard/{uid}: ranking global (todos leem; cada um escreve só o próprio e nunca piora o recorde).
 service cloud.firestore {
@@ -31,7 +31,7 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['nick', 'best', 'char', 'kills', 'updatedAt'])
         && validNick(request.resource.data.nick)
         && request.resource.data.best is int && request.resource.data.best >= 0 && request.resource.data.best <= 36000
-        && request.resource.data.char in ['gato', 'guaxinim', 'pug']
+        && request.resource.data.char in ['gato', 'guaxinim', 'pug', 'coelho', 'macaco', 'tatu', 'corvo']
         && request.resource.data.kills is int && request.resource.data.kills >= 0
         && request.resource.data.updatedAt == request.time
         && (resource == null || request.resource.data.best >= resource.data.best);

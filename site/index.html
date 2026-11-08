@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Neko G · RX Games · roguelite de hordas cyberpunk</title>
+<meta name="description" content="Neko G: plataforma 2D de ação e roguelite de hordas num mundo cyberpunk neon. Personagens, monstros, chefões, cenários, modos e download do APK de teste.">
+<meta name="theme-color" content="#06031a">
+<meta property="og:title" content="Neko G · RX Games">
+<meta property="og:description" content="Plataforma 2D + hordas num mundo cyberpunk neon. Baixe o APK de teste.">
+<link rel="icon" href="img/it_cyber.webp">
+<style>
+:root { --pink:#ff4df0; --cyan:#5ef0ff; --gold:#ffd84d; --green:#4dffa6; --orange:#ff9a3c; --lilac:#b9a6ff; --text:#ece8ff; --bg:#06031a; --nav:56px; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--nav) + 8px); -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 "Trebuchet MS", system-ui, sans-serif; overflow-x: hidden; }
+body::before { content: ''; position: fixed; inset: 0; z-index: -2; background: radial-gradient(ellipse at 50% 0%, #2a0d44 0%, #0b0520 50%, #04020c 100%); }
+body::after { content: ''; position: fixed; inset: 0; z-index: 50; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 1px, transparent 1px 3px); }
+a { color: var(--cyan); }
+img { max-width: 100%; }
+.wrap { width: min(1120px, 100%); margin: 0 auto; padding: 0 16px; }
+
+/* Sprites animados: tira de quadros deslizando em passos */
+.spr { display: inline-block; position: relative; overflow: hidden; flex: none; vertical-align: bottom; }
+.spr img { display: block; position: absolute; left: 0; top: 0; max-width: none; height: 100%; width: auto; image-rendering: pixelated; }
+.spr.anim img { animation: strip var(--d) steps(var(--n)) infinite; }
+@keyframes strip { to { transform: translateX(-100%); } }
+
+/* Menu fixo */
+.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 40; height: var(--nav); display: flex; align-items: center; gap: 12px; padding: 0 12px;
+  background: rgba(6,3,26,.86); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid rgba(255,77,240,.35); box-shadow: 0 0 18px rgba(255,77,240,.15); }
+.nav .mini-logo { font-weight: 900; font-size: 20px; letter-spacing: 3px; text-decoration: none; color: #fff; text-shadow: 0 0 8px var(--pink); white-space: nowrap; }
+.nav .mini-logo b { color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
+.nav ul { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; overflow-x: auto; scrollbar-width: none; flex: 1; mask-image: linear-gradient(to right, #000 85%, transparent); -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); }
+.nav ul::-webkit-scrollbar { display: none; }
+.nav li a { display: block; padding: 8px 10px; border-radius: 8px; color: var(--text); text-decoration: none; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
+.nav li a:hover, .nav li a.on { color: #fff; background: rgba(255,77,240,.16); box-shadow: inset 0 -2px 0 var(--pink); }
+.nav .dl { flex: none; padding: 7px 12px; border-radius: 10px; border: 2px solid var(--pink); color: #fff; font-weight: 900; font-size: 12px; letter-spacing: 1px; text-decoration: none; box-shadow: 0 0 10px var(--pink); }
+@media (min-width: 900px) { .nav ul { mask-image: none; -webkit-mask-image: none; justify-content: center; } }
+
+/* Topo */
+.hero { position: relative; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: calc(var(--nav) + 28px) 16px 40px; text-align: center; overflow: hidden; }
+.grid { position: absolute; left: -50%; right: -50%; bottom: -6%; height: 44%; z-index: -1; background: repeating-linear-gradient(90deg, rgba(255,77,240,.35) 0 1px, transparent 1px 44px), repeating-linear-gradient(0deg, rgba(94,240,255,.3) 0 1px, transparent 1px 44px);
+  transform: perspective(300px) rotateX(62deg); transform-origin: 50% 0; animation: grid 2.4s linear infinite; mask-image: linear-gradient(to top, #000 30%, transparent); -webkit-mask-image: linear-gradient(to top, #000 30%, transparent); }
+@keyframes grid { to { background-position: 0 44px, 0 44px; } }
+.studio { font-size: 13px; letter-spacing: 5px; color: var(--lilac); }
+.studio b { color: #fff; font-size: 18px; letter-spacing: 3px; text-shadow: 0 0 8px #fff, 0 0 20px var(--pink); }
+.logo { display: flex; align-items: baseline; justify-content: center; gap: 12px; margin: 0; font-weight: 900; font-size: clamp(64px, 21vw, 150px); letter-spacing: 6px; line-height: 1; }
+.logo .neko { color: #fff; text-shadow: 0 0 6px #fff, 0 0 18px #ff4df0, 0 0 40px #ff4df0; animation: flick 1.6s steps(1) .2s both; }
+.logo .g { color: var(--cyan); text-shadow: 0 0 6px #fff, 0 0 18px #5ef0ff, 0 0 40px #5ef0ff; animation: flick 1.6s steps(1) .65s both; }
+@keyframes flick { 0% { opacity: 0; } 10% { opacity: 1; } 14% { opacity: .1; } 22% { opacity: 1; } 30% { opacity: .3; } 34%, 100% { opacity: 1; } }
+.tagline { font-size: 12px; letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 10px rgba(255,216,77,.5); }
+.pitch { max-width: 560px; margin: 4px auto 0; font-size: 17px; opacity: .92; }
+.lineup { display: flex; justify-content: center; align-items: flex-end; flex-wrap: wrap; gap: 0 4px; margin: 10px 0 4px; max-width: 1000px; }
+.hero-char { animation: up .6s ease-out calc(.9s + var(--i) * .08s) both; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--c) 45%, transparent)); }
+.hero-char.soon { opacity: .55; filter: grayscale(.5); }
+@media (max-width: 520px) { .lineup { zoom: .78; } }
+@keyframes up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.cta { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 240px; padding: 14px 22px; border-radius: 12px; border: 2px solid var(--c, var(--pink)); background: rgba(10,8,30,.85);
+  color: #fff; font-size: 18px; font-weight: 900; letter-spacing: 1px; text-decoration: none; box-shadow: 0 0 14px var(--c, var(--pink)); animation: pulse 2.2s ease-in-out infinite; }
+.btn:hover { background: rgba(255,77,240,.18); }
+.btn.alt { --c: var(--cyan); animation: none; font-size: 15px; min-width: 0; padding: 10px 16px; }
+@keyframes pulse { 50% { box-shadow: 0 0 28px var(--c, var(--pink)), 0 0 6px #fff; } }
+.cta small { font-size: 12px; opacity: .7; }
+.scroll-hint { margin-top: 6px; font-size: 11px; letter-spacing: 3px; opacity: .55; }
+
+/* Seções */
+section { padding: 56px 0 24px; }
+.h2 { --c: var(--pink); margin: 0 0 6px; font-size: clamp(26px, 7vw, 40px); font-weight: 900; letter-spacing: 4px; text-transform: uppercase; color: #fff; text-shadow: 0 0 6px #fff, 0 0 18px var(--c), 0 0 36px var(--c); }
+.kicker { margin: 0 0 22px; font-size: 12px; letter-spacing: 3px; color: var(--c, var(--cyan)); text-transform: uppercase; }
+h3, h4, h5 { margin: 0; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
+.card { --c: var(--cyan); border: 2px solid var(--c); border-radius: 14px; background: rgba(10,8,30,.9); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent); padding: 16px; }
+.card h3, .card h4 { color: #fff; text-shadow: 0 0 10px var(--c); }
+.ico { color: var(--c); text-shadow: 0 0 8px var(--c); }
+.lead { max-width: 760px; font-size: 17px; }
+
+/* História */
+.story { display: grid; gap: 18px; grid-template-columns: 1fr; align-items: start; }
+.story p { margin: 0 0 14px; }
+.story p:first-letter { font-size: 1.6em; font-weight: 900; color: var(--pink); text-shadow: 0 0 8px var(--pink); }
+.story .shot-phone { justify-self: center; }
+@media (min-width: 860px) { .story { grid-template-columns: 1.4fr 1fr; gap: 32px; } }
+
+/* Como se joga */
+.duo { display: grid; gap: 20px; grid-template-columns: 1fr; align-items: center; }
+@media (min-width: 860px) { .duo { grid-template-columns: 1fr 1fr; } .duo.rev > :first-child { order: 2; } }
+.phone { position: relative; width: min(280px, 78vw); margin: 0 auto; border: 3px solid var(--c, var(--pink)); border-radius: 26px; padding: 10px 8px; background: #05020f; box-shadow: 0 0 22px var(--c, var(--pink)); }
+.phone img { display: block; width: 100%; height: auto; border-radius: 16px; }
+.phone figcaption { margin-top: 8px; font-size: 12px; text-align: center; opacity: .75; }
+.ctrls { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); margin: 14px 0; padding: 0; list-style: none; }
+.ctrls li { --c: var(--lilac); display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 2px solid var(--c); border-radius: 12px; background: rgba(10,8,30,.75); font-size: 14px; }
+.ctrls .key { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; border: 2px dashed var(--c); color: var(--c); font-weight: 900; font-size: 18px; text-shadow: 0 0 8px var(--c); }
+.moves { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin-top: 18px; }
+.move { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 8px; min-height: 186px; text-align: center; font-size: 13px; }
+.move b { display: block; color: #fff; letter-spacing: 1px; font-size: 14px; text-transform: uppercase; }
+.loop { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); margin: 18px 0; }
+.loop .card { display: flex; gap: 12px; align-items: center; }
+.loop .card p { margin: 4px 0 0; font-size: 14px; }
+.skills { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.skill { display: flex; gap: 12px; padding: 12px; border: 2px solid var(--c); border-radius: 12px; background: rgba(12,8,30,.9); box-shadow: 0 0 10px color-mix(in srgb, var(--c) 40%, transparent); }
+.skill .ico { flex: none; width: 34px; font-size: 26px; text-align: center; line-height: 1.2; }
+.skill p { margin: 2px 0 0; font-size: 14px; opacity: .9; }
+.skill .evo { font-size: 13px; color: var(--gold); opacity: 1; }
+.skill.sm { padding: 10px 12px; }
+.h3 { margin: 30px 0 12px; font-size: 20px; color: #fff; text-shadow: 0 0 10px var(--c, var(--cyan)); }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; padding: 0; list-style: none; }
+.pills li { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--c, var(--lilac)); font-size: 14px; background: rgba(10,8,30,.7); }
+.lab { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); margin: 10px 0; padding: 0; list-style: none; }
+.lab li { --c: var(--cyan); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding: 10px 12px; border-left: 3px solid var(--c); background: rgba(10,8,30,.75); border-radius: 0 10px 10px 0; font-size: 14px; }
+.lab .ico { font-size: 18px; }
+.lab span:last-child { width: 100%; opacity: .8; }
+.branches { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.branch { --c: var(--pink); padding: 12px 14px; border: 2px solid var(--c); border-radius: 12px; background: rgba(10,8,30,.85); }
+.branch h5 { color: var(--c); text-shadow: 0 0 8px var(--c); font-size: 15px; }
+.branch ul { margin: 8px 0 0; padding-left: 18px; font-size: 14px; }
+.weapons { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.weapons .card { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; font-size: 14px; }
+.weapons .card p { margin: 0; }
+.backup { --c: var(--gold); display: grid; gap: 16px; grid-template-columns: 1fr; align-items: center; }
+.backup .count { font-size: 64px; font-weight: 900; color: var(--gold); text-shadow: 0 0 10px #fff, 0 0 28px var(--gold); text-align: center; line-height: 1; }
+@media (min-width: 700px) { .backup { grid-template-columns: 140px 1fr; } }
+
+/* Modos */
+.modes { display: grid; gap: 18px; grid-template-columns: 1fr; }
+@media (min-width: 860px) { .modes { grid-template-columns: 1fr 1fr; } }
+.mode h3 { font-size: 26px; }
+.mode h3 .ico { font-size: 28px; }
+.mode ul { padding-left: 18px; margin: 10px 0 0; }
+.mode li { margin: 5px 0; }
+.mode .note { font-size: 13px; opacity: .75; }
+.goals { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); margin: 12px 0; }
+.goals div { padding: 10px; border: 1px dashed var(--c); border-radius: 10px; font-size: 14px; }
+.goals b { display: block; color: var(--c); letter-spacing: 1px; }
+.stars { color: var(--gold); text-shadow: 0 0 8px var(--gold); letter-spacing: 2px; }
+
+/* Personagens */
+.chars { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+.char { display: flex; flex-direction: column; gap: 8px; }
+.char .pedestal { display: flex; justify-content: center; align-items: flex-end; min-height: 200px; padding-top: 6px; background: radial-gradient(ellipse at 50% 90%, color-mix(in srgb, var(--c) 25%, transparent), transparent 65%); }
+.char h3 { font-size: 26px; text-align: center; }
+.char .line { margin: 0; text-align: center; font-style: italic; opacity: .85; }
+.facts { margin: 4px 0 0; padding: 0; list-style: none; font-size: 14px; }
+.facts li { padding: 6px 0; border-top: 1px solid rgba(255,255,255,.08); }
+.facts .k { display: block; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--c); }
+.facts em { color: var(--gold); font-style: normal; }
+.facts .wpn .spr { display: block; margin: 6px auto 0; }
+.bars { display: grid; gap: 4px; margin-top: 4px; }
+.bar { display: grid; grid-template-columns: 84px 1fr 46px; gap: 8px; align-items: center; font-size: 12px; }
+.bar i { height: 8px; border-radius: 4px; background: rgba(255,255,255,.08); position: relative; overflow: hidden; }
+.bar i::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--v); background: linear-gradient(90deg, var(--c), #fff); box-shadow: 0 0 8px var(--c); border-radius: 4px; }
+.bar b { text-align: right; }
+.price { margin-top: auto; padding-top: 8px; text-align: center; }
+.price .coin { color: var(--cyan); font-size: 20px; text-shadow: 0 0 8px var(--cyan); }
+.price .free { color: var(--green); letter-spacing: 2px; text-shadow: 0 0 8px var(--green); }
+.char.soon { border-style: dashed; }
+.char.soon .pedestal { filter: grayscale(.4) brightness(.85); }
+.tagsoon { display: inline-block; vertical-align: middle; margin-left: 6px; padding: 2px 8px; border-radius: 6px; background: var(--cyan); color: #06031a; font-size: 11px; letter-spacing: 2px; text-shadow: none; }
+.fine { font-size: 13px; opacity: .7; }
+
+/* Bestiário */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 12px; scrollbar-width: thin; }
+.chip { --c: var(--cyan); flex: none; padding: 8px 12px; border-radius: 999px; border: 2px solid var(--c); background: rgba(10,8,30,.85); color: var(--text); font: 700 12px/1 "Trebuchet MS", system-ui, sans-serif; letter-spacing: 1px; cursor: pointer; }
+.chip.on { background: var(--c); color: #06031a; box-shadow: 0 0 12px var(--c); }
+.count { font-size: 13px; opacity: .75; margin: 0 0 12px; }
+.foes-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+.foe { display: flex; gap: 12px; padding: 12px; align-items: flex-start; }
+.foe[hidden] { display: none; }
+.foe-img { flex: none; display: grid; place-items: center; width: 96px; min-height: 80px; border-radius: 10px; background: radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--c) 18%, transparent), transparent 70%); }
+.foe-img .spr { max-width: 96px; }
+.foe h4 { font-size: 15px; letter-spacing: 1px; }
+.foe p { margin: 4px 0 0; font-size: 13.5px; }
+.meta { font-size: 12px !important; letter-spacing: 1px; opacity: .85; }
+.tier { color: var(--c); }
+.where { display: flex; flex-wrap: wrap; gap: 4px; }
+.where i { --c: #fff; font-style: normal; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--c); color: var(--c); letter-spacing: .5px; }
+.bosses { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); }
+.boss { display: flex; flex-direction: column; gap: 8px; }
+.boss-img { display: flex; justify-content: center; align-items: flex-end; min-height: 172px; background: radial-gradient(ellipse at 50% 85%, color-mix(in srgb, var(--c) 22%, transparent), transparent 70%); }
+.boss h4 { font-size: 19px; }
+.atk { margin: 6px 0 0; padding-left: 18px; font-size: 14px; }
+.atk li { margin: 3px 0; }
+.boss-rules { margin: 8px 0 18px; }
+
+/* Cenários */
+.sectors { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.sector { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.sector .shot { position: relative; aspect-ratio: 396 / 360; background: #05020f; }
+.sector .shot img { display: block; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.sector .num { position: absolute; left: 10px; top: 8px; font-weight: 900; font-size: 26px; color: #fff; text-shadow: 0 0 8px var(--c), 0 0 18px var(--c); }
+.sec-tx { padding: 12px 14px 14px; border-top: 2px solid var(--c); }
+.sec-tx h4 { font-size: 18px; }
+.sec-tx p { margin: 6px 0 0; font-size: 14px; }
+.sec-tx .sub { margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--c); }
+.sec-tx .foes { font-size: 12.5px; opacity: .8; }
+
+/* Download */
+.steps { counter-reset: s; margin: 14px 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.steps li { counter-increment: s; position: relative; padding: 12px 12px 12px 54px; border: 2px solid rgba(94,240,255,.5); border-radius: 12px; background: rgba(10,8,30,.8); }
+.steps li::before { content: counter(s); position: absolute; left: 12px; top: 10px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--cyan); color: #06031a; font-weight: 900; box-shadow: 0 0 10px var(--cyan); }
+.play { --c: var(--green); text-align: center; }
+.play b { color: var(--green); letter-spacing: 2px; text-shadow: 0 0 8px var(--green); }
+footer { margin-top: 40px; padding: 26px 16px 40px; text-align: center; border-top: 1px solid rgba(255,77,240,.3); font-size: 13px; opacity: .85; }
+footer .mini-logo { font-weight: 900; font-size: 22px; letter-spacing: 3px; color: #fff; text-shadow: 0 0 8px var(--pink); }
+footer .mini-logo b { color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .spr.anim img, .grid, .btn, .logo .neko, .logo .g, .hero-char { animation: none !important; }
+}
+</style>
+</head>
+<body>
+<nav class="nav" aria-label="Seções">
+  <a class="mini-logo" href="#topo">NEKO <b>G</b></a>
+  <ul>
+    <li><a href="#historia">História</a></li>
+    <li><a href="#jogar">Como jogar</a></li>
+    <li><a href="#modos">Modos</a></li>
+    <li><a href="#personagens">Personagens</a></li>
+    <li><a href="#bestiario">Bestiário</a></li>
+    <li><a href="#cenarios">Cenários</a></li>
+    <li><a href="#baixar">Baixar</a></li>
+  </ul>
+  <a class="dl" href="#baixar">APK</a>
+</nav>
+
+<header class="hero" id="topo">
+  <div class="grid" aria-hidden="true"></div>
+  <div class="studio"><b>RX GAMES</b> apresenta</div>
+  <h1 class="logo" aria-label="Neko G"><span class="neko">NEKO</span><span class="g">G</span></h1>
+  <div class="tagline">ROGUELITE DE HORDAS · CYBERPUNK</div>
+  <p class="pitch">A cidade foi hackeada. As máquinas viraram uma horda. Pule, dê dash, corte e sobreviva o máximo que puder com um bando de animais neon.</p>
+  <div class="lineup" aria-label="Personagens"><div class="hero-char" style="--c:#ff4df0;--i:0"><span class="spr anim" style="width:112px;height:99px;--n:3;--d:0.75s;"><img src="img/char2_gato.webp" alt="GATO" width="336" height="99" loading="lazy" decoding="async"></span></div><div class="hero-char" style="--c:#4dffa6;--i:1"><span class="spr anim" style="width:112px;height:86px;--n:3;--d:0.75s;"><img src="img/char2_guaxinim.webp" alt="GUAXINIM" width="336" height="86" loading="lazy" decoding="async"></span></div><div class="hero-char" style="--c:#ff9a3c;--i:2"><span class="spr anim" style="width:112px;height:81px;--n:3;--d:0.75s;"><img src="img/char2_pug.webp" alt="PUG" width="336" height="81" loading="lazy" decoding="async"></span></div><div class="hero-char" style="--c:#ff5ad8;--i:3"><span class="spr anim" style="width:97px;height:116px;--n:3;--d:0.75s;"><img src="img/char2_coelho.webp" alt="COELHO" width="291" height="116" loading="lazy" decoding="async"></span></div><div class="hero-char" style="--c:#4dff7a;--i:4"><span class="spr anim" style="width:112px;height:88px;--n:3;--d:0.75s;"><img src="img/char2_macaco.webp" alt="MACACO" width="336" height="88" loading="lazy" decoding="async"></span></div><div class="hero-char" style="--c:#ffd84d;--i:5"><span class="spr anim" style="width:112px;height:87px;--n:3;--d:0.75s;"><img src="img/char2_tatu.webp" alt="TATU" width="336" height="87" loading="lazy" decoding="async"></span></div><div class="hero-char soon" style="--c:#5ef0ff;--i:6"><span class="spr anim" style="width:112px;height:105px;--n:3;--d:0.75s;"><img src="img/char2_corvo.webp" alt="Corvo" width="336" height="105" loading="lazy" decoding="async"></span></div></div>
+  <div class="cta">
+    <a class="btn" href="https://github.com/renanxaviier/neko-g/actions/workflows/android-apk.yml" target="_blank" rel="noopener">⬇ Baixar APK (teste)</a>
+    <small>Android · fase de testes · precisa de conta no GitHub · <a href="#baixar">como instalar</a></small>
+  </div>
+  <div class="scroll-hint">▼ ROLE PARA CONHECER O JOGO</div>
+</header>
+
+<main>
+<section id="historia"><div class="wrap">
+  <h2 class="h2">História</h2><p class="kicker" style="--c:var(--pink)">A cidade que nunca desliga</p>
+  <div class="story">
+    <div class="lead">
+      <p>Na metrópole neon, tudo tem um chip: os drones que recolhem o lixo, os cães de guarda do porto, os ratos do laboratório. Numa noite de chuva, um sinal partiu do 100º andar da <b>Torre Corporativa</b> e reescreveu cada um desses chips. Em segundos, as máquinas viraram uma horda que só obedece a uma ordem: caçar quem ainda pensa por conta própria.</p>
+      <p>Alguns animais de rua tinham implantes caseiros, montados com sucata no Distrito Neon, que o sinal não conseguiu ler. Um gato de botas a jato, um guaxinim hacker, um pug de armadura, um coelho biônico, um macaco que joga dados de código e um tatu blindado formaram um bando. Nas ruas, chamam o grupo de <b>NEKO G</b>. O "G"? Cada um conta uma versão: Gangue, Glitch, Garras… ninguém confirma.</p>
+      <p>Cada máquina derrubada solta uma <b>G Batty</b>, bateria ainda carregada que os implantes absorvem para ficar mais fortes no meio da luta. A <b>Sucata</b> volta para o Esconderijo, onde o Laboratório transforma restos de robô em upgrades permanentes.</p>
+      <p>Todo implante do bando guarda uma única cópia de segurança, o <b>Protocolo de Backup</b>. Se o corpo cai, ele pode voltar uma vez, só uma.</p>
+      <p>O caminho até o sinal atravessa 13 setores, cada um com um guardião gigante. E dizem que, quando alguém chega ao topo, o sinal reinicia mais forte, e a cidade inteira começa de novo.</p>
+    </div>
+    <figure class="phone shot-phone" style="--c:var(--pink)"><img src="img/shot_boss.webp" alt="O Gato enfrentando o Polvo de Neon no Distrito Neon" width="410" height="730" loading="lazy" decoding="async"><figcaption>O Gato contra o Polvo de Neon, guardião do Distrito.</figcaption></figure>
+  </div>
+</div></section>
+
+<section id="jogar"><div class="wrap">
+  <h2 class="h2" style="--c:var(--cyan)">Como se joga</h2><p class="kicker">Plataforma ágil + horda sem fim</p>
+  <div class="duo">
+    <figure class="phone" style="--c:var(--cyan)"><img src="img/shot_hud.webp" alt="Tela do jogo no Neon Mall com vida, nível, tempo e botões de toque" width="410" height="730" loading="lazy" decoding="async"><figcaption>Neon Mall: vida, nível, tempo até o chefão e os botões de toque.</figcaption></figure>
+    <div>
+      <p class="lead">O jogo é em pé (retrato), feito para o celular. Você corre e pula por uma arena horizontal sem fim enquanto a horda chega pelos dois lados, em ondas cada vez maiores. A movimentação é rápida e justa, no estilo Metroidvania: pulo variável, pulo duplo, deslizar e pular na parede, dash com invencibilidade.</p>
+      <ul class="ctrls">
+        <li style="--c:var(--lilac)"><span class="key">◀▶</span>Andar para os lados</li>
+        <li style="--c:var(--pink)"><span class="key">⤒</span><span><b>PULO</b>: segure para ir mais alto; no ar, pule de novo</span></li>
+        <li style="--c:var(--cyan)"><span class="key">⚡</span><span><b>DASH</b>: arrancada rápida, invencível por um instante</span></li>
+        <li style="--c:var(--gold)"><span class="key">⚔</span><span><b>ATAQUE</b>: golpeia para onde você olha; segure para atacar sem parar</span></li>
+      </ul>
+      <p class="fine">Ataque automático é opcional (Opções). Dá para mudar tamanho e transparência dos botões e usar o modo canhoto. No teclado: A/D ou ←/→ andam, Espaço pula, J ataca, Shift dá dash.</p>
+    </div>
+  </div>
+
+  <div class="moves">
+    <div class="card move" style="--c:var(--pink)"><span class="spr anim" style="width:110px;height:85px;--n:6;--d:0.50s;"><img src="img/gato_run.webp" alt="Gato correndo" width="660" height="85" loading="lazy" decoding="async"></span><span><b>Correr</b>Garras para a horda</span></div>
+    <div class="card move" style="--c:var(--pink)"><span class="spr anim" style="width:89px;height:143px;--n:2;--d:0.17s;"><img src="img/gato_airjump.webp" alt="Gato no pulo duplo" width="178" height="143" loading="lazy" decoding="async"></span><span><b>Pulo duplo</b>Botas a jato</span></div>
+    <div class="card move" style="--c:var(--cyan)"><span class="spr anim" style="width:138px;height:83px;--n:2;--d:0.17s;"><img src="img/gato_dash.webp" alt="Gato dando dash" width="276" height="83" loading="lazy" decoding="async"></span><span><b>Dash</b>Atravessa o perigo</span></div>
+    <div class="card move" style="--c:var(--gold)"><span class="spr anim" style="width:142px;height:89px;--n:3;--d:0.25s;"><img src="img/gato_attack.webp" alt="Gato atacando" width="426" height="89" loading="lazy" decoding="async"></span><span><b>Ataque</b>Garras Elétricas</span></div>
+    <div class="card move" style="--c:var(--green)"><span class="spr anim" style="width:88px;height:138px;--n:3;--d:0.50s;"><img src="img/guaxinim_glide.webp" alt="Guaxinim planando" width="264" height="138" loading="lazy" decoding="async"></span><span><b>Planar</b>Só o Guaxinim</span></div>
+    <div class="card move" style="--c:var(--orange)"><span class="spr anim" style="width:127px;height:121px;--n:2;--d:0.80s;"><img src="img/pug_slam.webp" alt="Pug na queda pesada" width="254" height="121" loading="lazy" decoding="async"></span><span><b>Queda pesada</b>Só o Pug</span></div>
+  </div>
+
+  <h3 class="h3" style="--c:var(--green)">G Batty, level up e cartas</h3>
+  <div class="duo rev">
+    <figure class="phone" style="--c:var(--green)"><img src="img/shot_levelup.webp" alt="Tela de level up com três cartas para escolher" width="410" height="730" loading="lazy" decoding="async"><figcaption>Level up: escolha 1 de 3 cartas.</figcaption></figure>
+    <div>
+      <div class="loop">
+        <div class="card" style="--c:var(--green)"><span class="spr anim" style="width:55px;height:60px;--n:4;--d:1.60s;"><img src="img/it_battery.webp" alt="G Batty" width="220" height="60" loading="lazy" decoding="async"></span><div><b>G Batty</b><p>Todo inimigo derrotado solta uma bateria de XP. Chegue perto e ela voa até você.</p></div></div>
+        <div class="card" style="--c:#ff5c8a"><span class="spr anim" style="width:51px;height:57px;--n:3;--d:0.60s;"><img src="img/it_hp.webp" alt="Cápsula de vida" width="153" height="57" loading="lazy" decoding="async"></span><div><b>Cápsula de vida</b><p>Cai de qualquer monstro, mais fácil dos tanques e quando sua vida está baixa.</p></div></div>
+        <div class="card" style="--c:var(--gold)"><span class="spr anim" style="width:36px;height:49px;--n:2;--d:0.40s;"><img src="img/it_coin.webp" alt="Sucata" width="72" height="49" loading="lazy" decoding="async"></span><div><b>Sucata</b><p>Moeda do jogo. Gaste no Laboratório e nas armas exclusivas.</p></div></div>
+        <div class="card" style="--c:var(--cyan)"><span class="spr" style="width:43px;height:49px;"><img src="img/it_cyber.webp" alt="Cyber-Moeda" width="43" height="49" loading="lazy" decoding="async"></span><div><b>Cyber-Moedas</b><p>Vêm do check-in diário, das missões e dos chefões. Liberam personagens e o revive.</p></div></div>
+      </div>
+      <p>Barra de XP cheia = <b>level up</b>: a ação pausa e aparecem <b>3 cartas</b>. Cada uma é uma skill nova ou um nível a mais numa que você já tem. Cabem <b>4 skills ativas + 4 passivas</b>, cada uma até o <b>nível 8</b>. Dá para <b>rerrolar</b> as cartas 2 vezes e <b>banir</b> 1 carta por partida. Uma ativa no nível máximo com a passiva certa <b>evolui</b> para uma versão bem mais forte.</p>
+    </div>
+  </div>
+  <h3 class="h3" style="--c:var(--pink)">Skills ativas e evoluções</h3>
+  <div class="skills"><div class="skill" style="--c:#5ef0ff"><span class="ico">⚡</span><div><b>Garras Elétricas</b><p>Seu ataque básico: golpe elétrico à frente (botão ATAQUE). No nível 5 golpeia também para trás.</p>
+<p class="evo">Nv 8 + <b>Turbo</b> → <b>Garras Relâmpago</b>: cada golpe solta raios que saltam para 3 inimigos.</p></div></div><div class="skill" style="--c:#ff4df0"><span class="ico">✦</span><div><b>Shurikens de Holograma</b><p>O ATAQUE também lança shurikens que ricocheteiam nas paredes.</p>
+<p class="evo">Nv 8 + <b>Resfriamento</b> → <b>Tempestade Holográfica</b>: +3 shurikens que ricocheteiam por muito mais tempo.</p></div></div><div class="skill" style="--c:#4dffa6"><span class="ico">◉</span><div><b>Drones Orbitais</b><p>Drones giram ao seu redor e ferem quem encostar.</p>
+<p class="evo">Nv 8 + <b>Ímã</b> → <b>Enxame Magnético</b>: 7 drones em órbita maior; ímã 50% mais forte.</p></div></div><div class="skill" style="--c:#ff8a2b"><span class="ico">♨</span><div><b>Rastro de Fogo</b><p>O dash deixa um rastro de fogo cibernético.</p>
+<p class="evo">Nv 8 + <b>Blindagem</b> → <b>Inferno Neon</b>: fogo mais largo e forte, que queima também enquanto você corre.</p></div></div><div class="skill" style="--c:#bff6ff"><span class="ico">↯</span><div><b>Raio em Cadeia</b><p>Automático: um raio atinge o inimigo mais próximo e salta para outros.</p>
+<p class="evo">Nv 8 + <b>Amplificador</b> → <b>Tempestade Elétrica</b>: dois raios por vez, até 10 saltos sem perder força.</p></div></div><div class="skill" style="--c:#8c9bff"><span class="ico">⊛</span><div><b>Campo Tesla</b><p>Automático: campo elétrico em volta dá choque em quem chegar perto.</p>
+<p class="evo">Nv 8 + <b>Vampirismo Digital</b> → <b>Bobina Vampira</b>: campo 40% maior e cada choque recupera vida.</p></div></div><div class="skill" style="--c:#ffb03c"><span class="ico">☾</span><div><b>Bumerangue de Plasma</b><p>Automático: vai e volta atravessando a horda.</p>
+<p class="evo">Nv 8 + <b>Dash Duplo</b> → <b>Bumerangue Duplo</b>: para os dois lados, +2, e cada dash lança um.</p></div></div></div>
+  <h3 class="h3" style="--c:var(--lilac)">Skills passivas</h3>
+  <div class="skills"><div class="skill sm" style="--c:#7fd8ff"><span class="ico">⊕</span><div><b>Ímã</b><p>+20% de raio de coleta das G Batty</p></div></div><div class="skill sm" style="--c:#ff5c8a"><span class="ico">♥</span><div><b>Blindagem</b><p>+10% de vida máxima (e cura esse valor)</p></div></div><div class="skill sm" style="--c:#ffe14d"><span class="ico">»</span><div><b>Turbo</b><p>+5% de velocidade e de dash</p></div></div><div class="skill sm" style="--c:#9ab8ff"><span class="ico">❄</span><div><b>Resfriamento</b><p>−6% no tempo de recarga das skills</p></div></div><div class="skill sm" style="--c:#ff3b5c"><span class="ico">❣</span><div><b>Vampirismo Digital</b><p>cada abate recupera 0,3% da vida por nível</p></div></div><div class="skill sm" style="--c:#ffd84d"><span class="ico">◎</span><div><b>Amplificador</b><p>+8% no tamanho de golpes, campos, raios e bumerangues</p></div></div><div class="skill sm" style="--c:#5ef0ff"><span class="ico">⇉</span><div><b>Dash Duplo</b><p>2ª carga de dash; depois, −6% na recarga</p></div></div></div>
+
+  <h3 class="h3" style="--c:var(--gold)">Protocolo de Backup (revive)</h3>
+  <div class="card backup">
+    <div class="count">5</div>
+    <div><p style="margin:0">Sua vida zerou? O jogo pausa e começa uma contagem de <b>5 segundos</b>. Assista a um anúncio ou pague <b>◆ 50 Cyber-Moedas</b> e volte com <b>50% da vida</b>, <b>3 s de invencibilidade</b> e uma explosão que empurra para longe todos os inimigos da tela. <b>Só 1 revive por partida.</b></p></div>
+  </div>
+
+  <h3 class="h3" style="--c:var(--orange)">Armas exclusivas</h3>
+  <p>Cada personagem pode ter uma arma própria, comprada e evoluída com Sucata (150 · 300 · 500 · 800 · 1200) na tela Escolher personagem. Com a arma comprada, ele já começa a partida com ela disparando sozinha. O nível 5 dá um bônus especial.</p>
+  <div class="weapons">
+    <div class="card" style="--c:#ff4df0"><span class="spr anim" style="width:175px;height:70px;--n:3;--d:0.25s;"><img src="img/wpn_garras.webp" alt="Garras Energizadas" width="525" height="70" loading="lazy" decoding="async"></span><h4>Garras Energizadas</h4><p>Gato · três garras de energia avançam e atravessam a horda.</p></div>
+    <div class="card" style="--c:#4dffa6"><span class="spr anim" style="width:141px;height:91px;--n:5;--d:0.42s;"><img src="img/wpn_dados.webp" alt="Corte de Dados" width="705" height="91" loading="lazy" decoding="async"></span><h4>Corte de Dados</h4><p>Guaxinim · corte dos dois lados; quem é atingido trava com glitch.</p></div>
+    <div class="card" style="--c:#ff9a3c"><span class="spr anim" style="width:140px;height:92px;--n:4;--d:0.33s;"><img src="img/wpn_martelo.webp" alt="Martelo de Impacto" width="560" height="92" loading="lazy" decoding="async"></span><h4>Martelo de Impacto</h4><p>Pug · pancada pesada à frente e onda de choque pelo chão.</p></div>
+  </div>
+
+  <h3 class="h3" style="--c:var(--cyan)">Esconderijo: Laboratório e talentos</h3>
+  <p>Entre as partidas, a Sucata compra <b>upgrades permanentes</b> no Laboratório (níveis 1 a 5, valem para todos os personagens):</p>
+  <ul class="lab"><li style="--c:#ff5c8a"><span class="ico">♥</span><b>Chassi Reforçado</b> <span>+10% de vida máxima por nível</span></li><li style="--c:#ffe14d"><span class="ico">»</span><b>Propulsores</b> <span>+4% de velocidade e +6% de dash por nível</span></li><li style="--c:#5ef0ff"><span class="ico">⚡</span><b>Sobrecarga de Núcleo</b> <span>+8% de dano por nível</span></li><li style="--c:#7fd8ff"><span class="ico">⊕</span><b>Módulo Magnético</b> <span>+15% de raio de coleta por nível</span></li><li style="--c:#c04dff"><span class="ico">✦</span><b>Sorte Algorítmica</b> <span>+6% de chance de carta RARA por nível</span></li><li style="--c:#ffb02e"><span class="ico">✸</span><b>Ataque Crítico</b> <span>+5% de chance de crítico (dano ×1,8 a ×2,2) por nível</span></li></ul>
+  <p>Além disso, cada personagem ganha <b>XP permanente</b> ao fim de toda partida e sobe até o <b>nível 30</b>. Cada nível dá 1 ponto de talento numa árvore de 3 ramos (o último talento de cada ramo pede 6 pontos no ramo; redistribuir é grátis):</p>
+  <div class="branches"><div class="branch" style="--c:#ff4df0"><h5>ATAQUE</h5><ul><li>Força: +3% de dano (5 níveis)</li><li>Precisão: +2% de crítico (3)</li><li>Ritmo: −3% de recarga (3)</li><li>Carrasco: +25% de dano em elites e chefes</li></ul></div><div class="branch" style="--c:#5ef0ff"><h5>DEFESA</h5><ul><li>Couraça: +4% de vida (5)</li><li>Resistência: −3% de dano recebido (3)</li><li>Nanorreparo: cura 1% a cada 8 s (3)</li><li>Escudo de Fase: bloqueia 1 golpe por fase</li></ul></div><div class="branch" style="--c:#ffd84d"><h5>MOBILIDADE</h5><ul><li>Passos Leves: +2% de velocidade (5)</li><li>Coletor: +8% de coleta (3)</li><li>Fôlego: −5% de recarga do dash (3)</li><li>Sorte Grande: +1 rerrolagem por partida</li></ul></div></div>
+  <p class="fine">Também há check-in de 7 dias (◆ 10 a ◆ 80) e 3 missões diárias que dão Cyber-Moedas.</p>
+</div></section>
+
+<section id="modos"><div class="wrap">
+  <h2 class="h2" style="--c:var(--gold)">Modos de jogo</h2><p class="kicker" style="--c:var(--gold)">Dois jeitos de atravessar a cidade</p>
+  <div class="modes">
+    <article class="card mode" style="--c:var(--pink)">
+      <h3><span class="ico">∞</span> Infinito</h3>
+      <p>Setor atrás de setor até cair. Sobreviva o máximo e entre no <b>ranking global de tempo</b>.</p>
+      <ul>
+        <li>Cada setor é um cenário inteiro, com horda própria.</li>
+        <li>O <b>chefão</b> chega depois de 2:30 no setor 1 e 2:20 nos seguintes (contagem no topo da tela).</li>
+        <li>Venceu? Abre um <b>portal</b> na cor do próximo cenário: ao entrar, você recupera <b>+25% de vida</b> e fica 2 s invencível.</li>
+        <li>Cada setor deixa a horda mais forte. Depois do 13º, a cidade recomeça no <b>Ciclo 2</b>, com chefões ainda mais resistentes.</li>
+        <li>Seu nível e suas skills seguem com você de setor em setor.</li>
+      </ul>
+    </article>
+    <article class="card mode" style="--c:var(--cyan)">
+      <h3><span class="ico">▶</span> Jornada</h3>
+      <p>Mapas em sequência, praticamente sem fim. Cada <b>mapa = 1 cenário</b>, com <b>4 fases + chefe</b> (uns 6 a 8 minutos). O mapa 1 é sempre o Distrito; depois, a cada ciclo de 13 os cenários vêm embaralhados, iguais para todo mundo.</p>
+      <div class="goals" style="--c:var(--cyan)">
+        <div><b>⏱ SOBREVIVA</b>60 s, +10 s por fase</div>
+        <div><b>☠ DERROTE</b>32 inimigos, +9 por fase</div>
+        <div><b>➜ CHEGUE À SAÍDA</b>corra até o portal</div>
+        <div><b>★ CAÇADA DE ELITE</b>3 a 6 elites com vida ×4 (mapa 2+)</div>
+        <div><b>🔋 COLETE G BATTY</b>40 baterias, +8 por fase (mapa 2+)</div>
+        <div><b>⚠ CHEFE</b>a fase final: o chefe surge em 5 s</div>
+      </div>
+      <p><b>Modificador do mapa</b> (a partir do mapa 2, um por mapa):</p>
+      <ul class="pills" style="--c:var(--cyan)"><li><span class="ico">🐀</span> <b>ENXAME</b> · Muito mais inimigos, mais frágeis</li><li><span class="ico">🛡</span> <b>BLINDADOS</b> · Inimigos +50% vida · +60% Sucata</li><li><span class="ico">🔥</span> <b>FÚRIA</b> · Inimigos +40% dano · +30% XP</li><li><span class="ico">⚡</span> <b>SOBRECARGA</b> · Suas skills recarregam 20% mais rápido · inimigos +20% vida</li></ul>
+      <ul>
+        <li><span class="stars">★★★</span> por mapa: vencer · sem usar o revive · terminar com 50% de vida ou mais. Cada estrela nova vale ◆ 2.</li>
+        <li><b>Expedição:</b> venceu o mapa? Siga para o próximo mantendo nível, skills e armas, com +35% de vida. Quanto mais forte você chega, mais forte a horda fica.</li>
+        <li>Recompensas: chefe ◆ 5 (◆ 1 se o mapa já foi vencido), vitória +Sucata (30 + 8 por mapa) e ◆ 5 na primeira vez.</li>
+        <li>As cartas valem para o mapa inteiro. O botão 🗺 MAPAS mostra o caminho, as estrelas e deixa repetir mapas vencidos.</li>
+      </ul>
+    </article>
+  </div>
+</div></section>
+
+<section id="personagens"><div class="wrap">
+  <h2 class="h2" style="--c:var(--green)">Personagens</h2><p class="kicker" style="--c:var(--green)">O bando Neko G</p>
+  <p class="lead">Todos pulam, dão pulo duplo, deslizam e pulam na parede e dão dash. Cada um tem um traço de movimento, um ataque básico e atributos próprios. O Gato é grátis; os outros são liberados com Cyber-Moedas.</p>
+  <div class="chars"><article class="card char" style="--c:#ff4df0">
+  <div class="pedestal"><span class="spr anim" style="width:210px;height:186px;--n:3;--d:0.75s;"><img src="img/char_gato.webp" alt="GATO" width="630" height="186" loading="lazy" decoding="async"></span></div>
+  <h3>GATO</h3><p class="line">O mais rápido do bando: botas a jato e garras elétricas.</p>
+  <ul class="facts"><li><span class="k">Traço</span>2 pulos no ar</li><li><span class="k">Ataque</span><span class="ico">⚡</span> Garras Elétricas</li><li><span class="k">Submerso</span>Na água: braçada 18% mais forte.</li><li class="wpn"><span class="k">Arma exclusiva</span><b>Garras Energizadas</b> Três garras de energia avançam e atravessam a horda. <em>Nv 5: lança para frente e para trás.</em><span class="spr anim" style="width:120px;height:48px;--n:3;--d:0.25s;"><img src="img/wpn_garras.webp" alt="Garras Energizadas" width="360" height="48" loading="lazy" decoding="async"></span></li></ul>
+  <div class="bars"><div class="bar"><span>Vida</span><i style="--v:67%"></i><b>100%</b></div><div class="bar"><span>Dano</span><i style="--v:67%"></i><b>100%</b></div><div class="bar"><span>Alcance</span><i style="--v:67%"></i><b>100%</b></div><div class="bar"><span>Velocidade</span><i style="--v:67%"></i><b>100%</b></div><div class="bar"><span>Ímã</span><i style="--v:67%"></i><b>100%</b></div></div>
+  <div class="price"><b class="free">GRÁTIS · INICIAL</b></div>
+</article>
+<article class="card char" style="--c:#4dffa6">
+  <div class="pedestal"><span class="spr anim" style="width:210px;height:162px;--n:3;--d:0.75s;"><img src="img/char_guaxinim.webp" alt="GUAXINIM" width="630" height="162" loading="lazy" decoding="async"></span></div>
+  <h3>GUAXINIM</h3><p class="line">O hacker do grupo: plana de paraquedas e solta drones.</p>
+  <ul class="facts"><li><span class="k">Traço</span>Plana: segure PULO caindo</li><li><span class="k">Ataque</span><span class="ico">⌁</span> Lâmina Hacker</li><li><span class="k">Começa com</span>Drones Orbitais</li><li><span class="k">Submerso</span>Na água: segure PULO para flutuar parado.</li><li class="wpn"><span class="k">Arma exclusiva</span><b>Corte de Dados</b> Corte dos dois lados; quem é atingido trava com glitch. <em>Nv 5: corte maior e glitch mais longo.</em><span class="spr anim" style="width:86px;height:56px;--n:5;--d:0.42s;"><img src="img/wpn_dados.webp" alt="Corte de Dados" width="430" height="56" loading="lazy" decoding="async"></span></li></ul>
+  <div class="bars"><div class="bar"><span>Vida</span><i style="--v:60%"></i><b>90%</b></div><div class="bar"><span>Dano</span><i style="--v:60%"></i><b>90%</b></div><div class="bar"><span>Alcance</span><i style="--v:73%"></i><b>110%</b></div><div class="bar"><span>Velocidade</span><i style="--v:67%"></i><b>100%</b></div><div class="bar"><span>Ímã</span><i style="--v:87%"></i><b>130%</b></div></div>
+  <div class="price"><b class="coin">◆ 120</b> <small>Cyber-Moedas</small></div>
+</article>
+<article class="card char" style="--c:#ff9a3c">
+  <div class="pedestal"><span class="spr anim" style="width:210px;height:153px;--n:3;--d:0.75s;"><img src="img/char_pug.webp" alt="PUG" width="630" height="153" loading="lazy" decoding="async"></span></div>
+  <h3>PUG</h3><p class="line">A muralha: armadura pesada e soco de energia.</p>
+  <ul class="facts"><li><span class="k">Traço</span>Queda pesada: DASH no ar vira mergulho com onda de choque · +30% de vida</li><li><span class="k">Ataque</span><span class="ico">✊</span> Soco de Energia</li><li><span class="k">Submerso</span>Na água: afunda mais rápido e a queda vira Âncora.</li><li class="wpn"><span class="k">Arma exclusiva</span><b>Martelo de Impacto</b> Pancada pesada à frente e onda de choque pelo chão. <em>Nv 5: uma segunda onda de choque.</em><span class="spr anim" style="width:85px;height:56px;--n:4;--d:0.33s;"><img src="img/wpn_martelo.webp" alt="Martelo de Impacto" width="340" height="56" loading="lazy" decoding="async"></span></li></ul>
+  <div class="bars"><div class="bar"><span>Vida</span><i style="--v:87%"></i><b>130%</b></div><div class="bar"><span>Dano</span><i style="--v:90%"></i><b>135%</b></div><div class="bar"><span>Alcance</span><i style="--v:57%"></i><b>85%</b></div><div class="bar"><span>Velocidade</span><i style="--v:61%"></i><b>91%</b></div><div class="bar"><span>Ímã</span><i style="--v:67%"></i><b>100%</b></div></div>
+  <div class="price"><b class="coin">◆ 160</b> <small>Cyber-Moedas</small></div>
+</article>
+<article class="card char" style="--c:#ff5ad8">
+  <div class="pedestal"><span class="spr anim" style="width:183px;height:219px;--n:3;--d:0.75s;"><img src="img/char_coelho.webp" alt="COELHO" width="549" height="219" loading="lazy" decoding="async"></span></div>
+  <h3>COELHO</h3><p class="line">Pernas biônicas: ninguém pula mais alto.</p>
+  <ul class="facts"><li><span class="k">Traço</span>3 pulos no ar · pulo mais alto · um pouco mais rápido</li><li><span class="k">Ataque</span><span class="ico">☾</span> Chute Meia-Lua</li><li><span class="k">Arma exclusiva</span><em>em desenvolvimento</em></li></ul>
+  <div class="bars"><div class="bar"><span>Vida</span><i style="--v:57%"></i><b>85%</b></div><div class="bar"><span>Dano</span><i style="--v:63%"></i><b>95%</b></div><div class="bar"><span>Alcance</span><i style="--v:73%"></i><b>110%</b></div><div class="bar"><span>Velocidade</span><i style="--v:69%"></i><b>104%</b></div><div class="bar"><span>Ímã</span><i style="--v:67%"></i><b>100%</b></div></div>
+  <div class="price"><b class="coin">◆ 200</b> <small>Cyber-Moedas</small></div>
+</article>
+<article class="card char" style="--c:#4dff7a">
+  <div class="pedestal"><span class="spr anim" style="width:180px;height:141px;--n:3;--d:0.75s;"><img src="img/char_macaco.webp" alt="MACACO" width="540" height="141" loading="lazy" decoding="async"></span></div>
+  <h3>MACACO</h3><p class="line">Joga dados de código como arma.</p>
+  <ul class="facts"><li><span class="k">Traço</span>Arremessa dados: já começa com Shurikens</li><li><span class="k">Ataque</span><span class="ico">⌨</span> Soco Hacker</li><li><span class="k">Começa com</span>Shurikens de Holograma</li><li><span class="k">Arma exclusiva</span><em>em desenvolvimento</em></li></ul>
+  <div class="bars"><div class="bar"><span>Vida</span><i style="--v:60%"></i><b>90%</b></div><div class="bar"><span>Dano</span><i style="--v:53%"></i><b>80%</b></div><div class="bar"><span>Alcance</span><i style="--v:57%"></i><b>85%</b></div><div class="bar"><span>Velocidade</span><i style="--v:69%"></i><b>104%</b></div><div class="bar"><span>Ímã</span><i style="--v:77%"></i><b>115%</b></div></div>
+  <div class="price"><b class="coin">◆ 220</b> <small>Cyber-Moedas</small></div>
+</article>
+<article class="card char" style="--c:#ffd84d">
+  <div class="pedestal"><span class="spr anim" style="width:186px;height:144px;--n:3;--d:0.75s;"><img src="img/char_tatu.webp" alt="TATU" width="558" height="144" loading="lazy" decoding="async"></span></div>
+  <h3>TATU</h3><p class="line">Vira bola blindada e atropela a horda.</p>
+  <ul class="facts"><li><span class="k">Traço</span>Tanque: o dash vira bola blindada que atropela · +40% de vida</li><li><span class="k">Ataque</span><span class="ico">⛏</span> Garra Blindada</li><li><span class="k">Arma exclusiva</span><em>em desenvolvimento</em></li></ul>
+  <div class="bars"><div class="bar"><span>Vida</span><i style="--v:93%"></i><b>140%</b></div><div class="bar"><span>Dano</span><i style="--v:80%"></i><b>120%</b></div><div class="bar"><span>Alcance</span><i style="--v:60%"></i><b>90%</b></div><div class="bar"><span>Velocidade</span><i style="--v:58%"></i><b>87%</b></div><div class="bar"><span>Ímã</span><i style="--v:67%"></i><b>100%</b></div></div>
+  <div class="price"><b class="coin">◆ 260</b> <small>Cyber-Moedas</small></div>
+</article>
+<article class="card char soon" style="--c:#5ef0ff">
+  <div class="pedestal"><span class="spr anim" style="width:180px;height:168px;--n:3;--d:0.75s;"><img src="img/char_corvo.webp" alt="Corvo" width="540" height="168" loading="lazy" decoding="async"></span></div>
+  <h3>CORVO <span class="tagsoon">EM BREVE</span></h3><p class="line">Vigia a cidade do alto.</p>
+  <ul class="facts"><li><span class="k">Traço</span>Voo curto</li><li>Bate asas no ar e ataca de cima. Chega numa próxima atualização.</li></ul>
+</article></div>
+  <p class="fine">Valores da fase de testes; podem mudar até o lançamento. Barras em relação ao Gato (100%).</p>
+</div></section>
+
+<section id="bestiario"><div class="wrap">
+  <h2 class="h2" style="--c:var(--orange)">Bestiário</h2><p class="kicker" style="--c:var(--orange)">A horda cibernética</p>
+  <p class="lead">Todo ataque tem aviso (pisca, brilha, abaixa ou abre a boca) antes de acontecer. Cada cenário tem sua horda: no começo só fracos, depois entram médios e tanques. Toque num cenário para filtrar.</p>
+  <div class="chips" role="group" aria-label="Filtrar por cenário"><button class="chip on" data-f="all" style="--c:#ece8ff">TODOS</button><button class="chip" data-f="distrito" style="--c:#ff4df0">DISTRITO NEON</button><button class="chip" data-f="coast" style="--c:#4dffd2">CYBER-COAST</button><button class="chip" data-f="favelas" style="--c:#ffb03c">FAVELAS DE DADOS</button><button class="chip" data-f="porto" style="--c:#5ec8ff">PORTO AUTOMATIZADO</button><button class="chip" data-f="deep" style="--c:#36e7ff">CYBER DEEP</button><button class="chip" data-f="fabrica" style="--c:#ff9a3c">FÁBRICA DE ROBÔS</button><button class="chip" data-f="subway" style="--c:#36d8ff">DATA SUBWAY</button><button class="chip" data-f="genelab" style="--c:#4dff8c">GENELAB</button><button class="chip" data-f="mall" style="--c:#ff6ad5">NEON MALL</button><button class="chip" data-f="casino" style="--c:#ffd84d">CYBER CASINO</button><button class="chip" data-f="cage" style="--c:#ff4d6a">THE CAGE</button><button class="chip" data-f="jungle" style="--c:#c46cff">GLOW JUNGLE</button><button class="chip" data-f="torre" style="--c:#e8eeff">TORRE CORPORATIVA</button></div>
+  <p class="count" id="foe-count" aria-live="polite"></p>
+  <div class="foes-grid"><article class="card foe" data-s="distrito coast favelas subway cage" style="--c:#4dffa6">
+  <div class="foe-img"><span class="spr anim" style="width:86px;height:53px;--n:2;--d:0.25s;"><img src="img/en_rato.webp" alt="Cyber-Rato" width="172" height="53" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Cyber-Rato</h4>
+  <p class="meta"><b class="tier">FRACO</b> · ♥ 14 · ✸ 5</p>
+  <p>Corre rápido pelas plataformas e pula atrás de você. Frágil, mas vem em bando.</p><p class="where"><i style="--c:#ff4df0">Distrito Neon</i><i style="--c:#4dffd2">Cyber-Coast</i><i style="--c:#ffb03c">Favelas de Dados</i><i style="--c:#36d8ff">Data Subway</i><i style="--c:#ff4d6a">The Cage</i></p></div>
+</article>
+<article class="card foe" data-s="distrito porto fabrica mall casino torre" style="--c:#4dffa6">
+  <div class="foe-img"><span class="spr anim" style="width:91px;height:45px;--n:3;--d:0.38s;"><img src="img/en_drone.webp" alt="Drone Olho" width="273" height="45" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Drone Olho</h4>
+  <p class="meta"><b class="tier">FRACO</b> · VOA · ♥ 12 · ✸ 4</p>
+  <p>Voa ondulando direto até você e fere ao encostar.</p><p class="where"><i style="--c:#ff4df0">Distrito Neon</i><i style="--c:#5ec8ff">Porto Automatizado</i><i style="--c:#ff9a3c">Fábrica de Robôs</i><i style="--c:#ff6ad5">Neon Mall</i><i style="--c:#ffd84d">Cyber Casino</i><i style="--c:#e8eeff">Torre Corporativa</i></p></div>
+</article>
+<article class="card foe" data-s="distrito porto subway casino" style="--c:#4dffa6">
+  <div class="foe-img"><span class="spr anim" style="width:90px;height:60px;--n:3;--d:0.33s;"><img src="img/en_morcego.webp" alt="Morcego Cibernético" width="270" height="60" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Morcego Cibernético</h4>
+  <p class="meta"><b class="tier">FRACO</b> · VOA · ♥ 10 · ✸ 4</p>
+  <p>Voa por cima, para no ar por um instante e dá um mergulho rasante.</p><p class="where"><i style="--c:#ff4df0">Distrito Neon</i><i style="--c:#5ec8ff">Porto Automatizado</i><i style="--c:#36d8ff">Data Subway</i><i style="--c:#ffd84d">Cyber Casino</i></p></div>
+</article>
+<article class="card foe" data-s="favelas mall cage" style="--c:#4dffa6">
+  <div class="foe-img"><span class="spr anim" style="width:86px;height:57px;--n:2;--d:0.33s;"><img src="img/en_esquilo.webp" alt="Esquilo Bombardeiro" width="172" height="57" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Esquilo Bombardeiro</h4>
+  <p class="meta"><b class="tier">FRACO</b> · ♥ 16 · ✸ 6</p>
+  <p>Mantém distância e arremessa bolotas explosivas em arco. Ergue a bolota antes de jogar.</p><p class="where"><i style="--c:#ffb03c">Favelas de Dados</i><i style="--c:#ff6ad5">Neon Mall</i><i style="--c:#ff4d6a">The Cage</i></p></div>
+</article>
+<article class="card foe" data-s="fabrica subway genelab torre" style="--c:#4dffa6">
+  <div class="foe-img"><span class="spr anim" style="width:74px;height:46px;--n:4;--d:0.40s;"><img src="img/en_aranha.webp" alt="Aranha-Drone" width="296" height="46" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Aranha-Drone</h4>
+  <p class="meta"><b class="tier">FRACO</b> · ♥ 12 · ✸ 5</p>
+  <p>Desce do alto num fio de neon, balançando; ao tocar o chão vira corredora.</p><p class="where"><i style="--c:#ff9a3c">Fábrica de Robôs</i><i style="--c:#36d8ff">Data Subway</i><i style="--c:#4dff8c">GeneLab</i><i style="--c:#e8eeff">Torre Corporativa</i></p></div>
+</article>
+<article class="card foe" data-s="deep cage jungle" style="--c:#4dffa6">
+  <div class="foe-img"><span class="spr anim" style="width:58px;height:46px;--n:4;--d:0.67s;"><img src="img/en_ourico.webp" alt="Ouriço Neon" width="232" height="46" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Ouriço Neon</h4>
+  <p class="meta"><b class="tier">FRACO</b> · ♥ 16 · ✸ 5</p>
+  <p>Enrola, rola rápido (ricocheteia na parede) e solta 6 espinhos ao parar.</p><p class="where"><i style="--c:#36e7ff">Cyber Deep</i><i style="--c:#ff4d6a">The Cage</i><i style="--c:#c46cff">Glow Jungle</i></p></div>
+</article>
+<article class="card foe" data-s="genelab jungle" style="--c:#4dffa6">
+  <div class="foe-img"><span class="spr anim" style="width:57px;height:49px;--n:2;--d:0.80s;"><img src="img/en_sapo.webp" alt="Sapo Ácido" width="114" height="49" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Sapo Ácido</h4>
+  <p class="meta"><b class="tier">FRACO</b> · ♥ 16 · ✸ 5</p>
+  <p>Só anda pulando; de longe, cospe ácido em arco.</p><p class="where"><i style="--c:#4dff8c">GeneLab</i><i style="--c:#c46cff">Glow Jungle</i></p></div>
+</article>
+<article class="card foe" data-s="coast deep genelab" style="--c:#4dffa6">
+  <div class="foe-img"><span class="spr anim" style="width:55px;height:59px;--n:4;--d:0.57s;"><img src="img/en_medusa.webp" alt="Medusa Elétrica" width="220" height="59" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Medusa Elétrica</h4>
+  <p class="meta"><b class="tier">FRACO</b> · VOA · ♥ 14 · ✸ 5</p>
+  <p>Nada no ar em impulsos; de perto, dá um choque em volta.</p><p class="where"><i style="--c:#4dffd2">Cyber-Coast</i><i style="--c:#36e7ff">Cyber Deep</i><i style="--c:#4dff8c">GeneLab</i></p></div>
+</article>
+<article class="card foe" data-s="favelas fabrica subway casino" style="--c:#4dffa6">
+  <div class="foe-img"><span class="spr anim" style="width:65px;height:48px;--n:4;--d:0.40s;"><img src="img/en_ratoasa.webp" alt="Rato-Asa Bombardeiro" width="260" height="48" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Rato-Asa Bombardeiro</h4>
+  <p class="meta"><b class="tier">FRACO</b> · VOA · ♥ 12 · ✸ 6</p>
+  <p>Voa por cima de você e solta bombas.</p><p class="where"><i style="--c:#ffb03c">Favelas de Dados</i><i style="--c:#ff9a3c">Fábrica de Robôs</i><i style="--c:#36d8ff">Data Subway</i><i style="--c:#ffd84d">Cyber Casino</i></p></div>
+</article>
+<article class="card foe" data-s="jungle torre" style="--c:#4dffa6">
+  <div class="foe-img"><span class="spr anim" style="width:40px;height:46px;--n:7;--d:0.58s;"><img src="img/en_vagalume.webp" alt="Vaga-lume Bomba" width="280" height="46" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Vaga-lume Bomba</h4>
+  <p class="meta"><b class="tier">FRACO</b> · VOA · ♥ 8 · ✸ 12</p>
+  <p>Voa tremido até você, pisca e explode. Não fere por contato: fuja da explosão.</p><p class="where"><i style="--c:#c46cff">Glow Jungle</i><i style="--c:#e8eeff">Torre Corporativa</i></p></div>
+</article>
+<article class="card foe" data-s="favelas mall casino" style="--c:#4dffa6">
+  <div class="foe-img"><span class="spr anim" style="width:57px;height:52px;--n:2;--d:0.33s;"><img src="img/en_macaco.webp" alt="Macaco Hacker" width="114" height="52" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Macaco Hacker</h4>
+  <p class="meta"><b class="tier">FRACO</b> · ♥ 16 · ✸ 6</p>
+  <p>Arremessador, como o Esquilo: guarda distância e joga projéteis em arco.</p><p class="where"><i style="--c:#ffb03c">Favelas de Dados</i><i style="--c:#ff6ad5">Neon Mall</i><i style="--c:#ffd84d">Cyber Casino</i></p></div>
+</article>
+<article class="card foe" data-s="coast porto" style="--c:#4dffa6">
+  <div class="foe-img"><span class="spr" style="width:62px;height:46px;"><img src="img/en_ornitorrinco.webp" alt="Ornitorrinco Atirador" width="62" height="46" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Ornitorrinco Atirador</h4>
+  <p class="meta"><b class="tier">FRACO</b> · ♥ 18 · ✸ 6</p>
+  <p>Para, carrega a arma e atira um raio ciano reto.</p><p class="where"><i style="--c:#4dffd2">Cyber-Coast</i><i style="--c:#5ec8ff">Porto Automatizado</i></p></div>
+</article>
+<article class="card foe" data-s="deep" style="--c:#4dffa6">
+  <div class="foe-img"><span class="spr anim" style="width:72px;height:46px;--n:4;--d:0.50s;"><img src="img/en_peixe.webp" alt="Peixe-Lanterna Glitch" width="288" height="46" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Peixe-Lanterna Glitch</h4>
+  <p class="meta"><b class="tier">FRACO</b> · VOA · ♥ 14 · ✸ 5</p>
+  <p>Cardume do Cyber Deep: fica a uns 110 px de você e cospe uma bola de luz.</p><p class="where"><i style="--c:#36e7ff">Cyber Deep</i></p></div>
+</article>
+<article class="card foe" data-s="distrito coast favelas subway cage" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr anim" style="width:113px;height:71px;--n:2;--d:0.29s;"><img src="img/en_hound.webp" alt="Scrap-Hound" width="226" height="71" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Scrap-Hound</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · ♥ 45 · ✸ 10</p>
+  <p>Cachorro de sucata: abaixa, avisa e dá uma investida curta em linha reta.</p><p class="where"><i style="--c:#ff4df0">Distrito Neon</i><i style="--c:#4dffd2">Cyber-Coast</i><i style="--c:#ffb03c">Favelas de Dados</i><i style="--c:#36d8ff">Data Subway</i><i style="--c:#ff4d6a">The Cage</i></p></div>
+</article>
+<article class="card foe" data-s="mall casino torre" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr anim" style="width:131px;height:80px;--n:2;--d:0.80s;"><img src="img/en_lobo.webp" alt="Cyber-Lobo" width="262" height="80" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Cyber-Lobo</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · ♥ 55 · ✸ 11</p>
+  <p>Mais rápido que o Hound; persegue e faz investidas pelo chão.</p><p class="where"><i style="--c:#ff6ad5">Neon Mall</i><i style="--c:#ffd84d">Cyber Casino</i><i style="--c:#e8eeff">Torre Corporativa</i></p></div>
+</article>
+<article class="card foe" data-s="genelab casino jungle" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr anim" style="width:62px;height:69px;--n:3;--d:0.25s;"><img src="img/en_vespa.webp" alt="Vespa Zangão" width="186" height="69" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Vespa Zangão</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · VOA · ♥ 30 · ✸ 9</p>
+  <p>Voa em zigue-zague, brilha e dá uma investida rápida com o ferrão.</p><p class="where"><i style="--c:#4dff8c">GeneLab</i><i style="--c:#ffd84d">Cyber Casino</i><i style="--c:#c46cff">Glow Jungle</i></p></div>
+</article>
+<article class="card foe" data-s="porto fabrica torre" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr anim" style="width:80px;height:59px;--n:2;--d:0.80s;"><img src="img/en_dronev.webp" alt="Drone Voador" width="160" height="59" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Drone Voador</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · VOA · ♥ 28 · ✸ 8</p>
+  <p>Fica de lado, a média distância, mira e dispara um laser.</p><p class="where"><i style="--c:#5ec8ff">Porto Automatizado</i><i style="--c:#ff9a3c">Fábrica de Robôs</i><i style="--c:#e8eeff">Torre Corporativa</i></p></div>
+</article>
+<article class="card foe" data-s="coast porto deep" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr anim" style="width:77px;height:45px;--n:2;--d:0.33s;"><img src="img/en_caranguejo.webp" alt="Caranguejo Blindado" width="154" height="45" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Caranguejo Blindado</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · ♥ 50 · ✸ 9</p>
+  <p>Chega perto, levanta as pinças e belisca. Quase não é empurrado.</p><p class="where"><i style="--c:#4dffd2">Cyber-Coast</i><i style="--c:#5ec8ff">Porto Automatizado</i><i style="--c:#36e7ff">Cyber Deep</i></p></div>
+</article>
+<article class="card foe" data-s="favelas cage" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr anim" style="width:84px;height:60px;--n:2;--d:0.80s;"><img src="img/en_bode.webp" alt="Bode-Foguete" width="168" height="60" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Bode-Foguete</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · ♥ 45 · ✸ 10</p>
+  <p>Agacha, salta com foguetes num arco e cai com um pisão.</p><p class="where"><i style="--c:#ffb03c">Favelas de Dados</i><i style="--c:#ff4d6a">The Cage</i></p></div>
+</article>
+<article class="card foe" data-s="mall casino cage" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr anim" style="width:88px;height:72px;--n:3;--d:0.38s;"><img src="img/en_canguru.webp" alt="Canguru Boxeador" width="264" height="72" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Canguru Boxeador</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · ♥ 55 · ✸ 10</p>
+  <p>Anda pulando alto; de perto, dá um soco com avanço.</p><p class="where"><i style="--c:#ff6ad5">Neon Mall</i><i style="--c:#ffd84d">Cyber Casino</i><i style="--c:#ff4d6a">The Cage</i></p></div>
+</article>
+<article class="card foe" data-s="genelab jungle" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr anim" style="width:42px;height:46px;--n:2;--d:0.67s;"><img src="img/en_camaleao.webp" alt="Camaleão Fantasma" width="84" height="46" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Camaleão Fantasma</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · ♥ 40 · ✸ 10</p>
+  <p>Chega quase invisível (repare na distorção); perto, aparece e dá uma linguada.</p><p class="where"><i style="--c:#4dff8c">GeneLab</i><i style="--c:#c46cff">Glow Jungle</i></p></div>
+</article>
+<article class="card foe" data-s="mall casino torre" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr" style="width:86px;height:52px;"><img src="img/en_coruja.webp" alt="Coruja de Vigilância" width="86" height="52" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Coruja de Vigilância</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · VOA · ♥ 34 · ✸ 8</p>
+  <p>Fica no alto e solta 2 mini-drones teleguiados.</p><p class="where"><i style="--c:#ff6ad5">Neon Mall</i><i style="--c:#ffd84d">Cyber Casino</i><i style="--c:#e8eeff">Torre Corporativa</i></p></div>
+</article>
+<article class="card foe" data-s="porto deep fabrica torre" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr anim" style="width:98px;height:57px;--n:2;--d:0.33s;"><img src="img/en_leaomarinho.webp" alt="Leão-Marinho Jato" width="196" height="57" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Leão-Marinho Jato</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · VOA · ♥ 45 · ✸ 8</p>
+  <p>Voa de lado com propulsores e dispara rajadas de 3 tiros.</p><p class="where"><i style="--c:#5ec8ff">Porto Automatizado</i><i style="--c:#36e7ff">Cyber Deep</i><i style="--c:#ff9a3c">Fábrica de Robôs</i><i style="--c:#e8eeff">Torre Corporativa</i></p></div>
+</article>
+<article class="card foe" data-s="jungle" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr anim" style="width:74px;height:83px;--n:2;--d:0.80s;"><img src="img/en_alce.webp" alt="Alce de Plasma" width="148" height="83" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Alce de Plasma</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · ♥ 60 · ✸ 11</p>
+  <p>Os chifres brilham e ele faz uma investida forte.</p><p class="where"><i style="--c:#c46cff">Glow Jungle</i></p></div>
+</article>
+<article class="card foe" data-s="fabrica subway" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr anim" style="width:83px;height:46px;--n:2;--d:0.25s;"><img src="img/en_texugo.webp" alt="Texugo Voltaico" width="166" height="46" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Texugo Voltaico</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · ♥ 45 · ✸ 10</p>
+  <p>Investida rápida soltando faíscas pelo caminho.</p><p class="where"><i style="--c:#ff9a3c">Fábrica de Robôs</i><i style="--c:#36d8ff">Data Subway</i></p></div>
+</article>
+<article class="card foe" data-s="deep" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr anim" style="width:150px;height:70px;--n:2;--d:0.80s;"><img src="img/en_tubarao.webp" alt="Tubarão-Torpedo" width="300" height="70" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Tubarão-Torpedo</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · VOA · ♥ 60 · ✸ 12</p>
+  <p>Ronda em ondas ao seu lado, abre a boca (aviso) e dá um bote rápido em linha reta.</p><p class="where"><i style="--c:#36e7ff">Cyber Deep</i></p></div>
+</article>
+<article class="card foe" data-s="deep" style="--c:#ffd84d">
+  <div class="foe-img"><span class="spr anim" style="width:71px;height:77px;--n:4;--d:0.50s;"><img src="img/en_lula.webp" alt="Cyber-Lula" width="284" height="77" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Cyber-Lula</h4>
+  <p class="meta"><b class="tier">MÉDIO</b> · VOA · ♥ 48 · ✸ 9</p>
+  <p>Nada em jatos, se alinha na sua altura e solta um raio horizontal. Linha rosa piscando = sai da frente.</p><p class="where"><i style="--c:#36e7ff">Cyber Deep</i></p></div>
+</article>
+<article class="card foe" data-s="distrito favelas genelab torre" style="--c:#ff9a3c">
+  <div class="foe-img"><span class="spr anim" style="width:90px;height:96px;--n:2;--d:0.50s;"><img src="img/en_urso.webp" alt="Urso Cibernético" width="180" height="96" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Urso Cibernético</h4>
+  <p class="meta"><b class="tier">TANQUE</b> · ♥ 220 · ✸ 16</p>
+  <p>Lento e muito resistente: avança sem parar e quase não sente empurrão.</p><p class="where"><i style="--c:#ff4df0">Distrito Neon</i><i style="--c:#ffb03c">Favelas de Dados</i><i style="--c:#4dff8c">GeneLab</i><i style="--c:#e8eeff">Torre Corporativa</i></p></div>
+</article>
+<article class="card foe" data-s="porto fabrica mall torre" style="--c:#ff9a3c">
+  <div class="foe-img"><span class="spr anim" style="width:94px;height:96px;--n:2;--d:0.50s;"><img src="img/en_panda.webp" alt="Panda de Guerra" width="188" height="96" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Panda de Guerra</h4>
+  <p class="meta"><b class="tier">TANQUE</b> · ♥ 260 · ✸ 15</p>
+  <p>Para, o braço-canhão brilha e ele dispara um tiro de plasma.</p><p class="where"><i style="--c:#5ec8ff">Porto Automatizado</i><i style="--c:#ff9a3c">Fábrica de Robôs</i><i style="--c:#ff6ad5">Neon Mall</i><i style="--c:#e8eeff">Torre Corporativa</i></p></div>
+</article>
+<article class="card foe" data-s="genelab casino cage jungle" style="--c:#ff9a3c">
+  <div class="foe-img"><span class="spr anim" style="width:102px;height:92px;--n:2;--d:0.50s;"><img src="img/en_gorila.webp" alt="Gorila de Aço" width="204" height="92" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Gorila de Aço</h4>
+  <p class="meta"><b class="tier">TANQUE</b> · ♥ 240 · ✸ 16</p>
+  <p>Pancada no chão: anel de impacto e ondas que correm pelo chão. Pule!</p><p class="where"><i style="--c:#4dff8c">GeneLab</i><i style="--c:#ffd84d">Cyber Casino</i><i style="--c:#ff4d6a">The Cage</i><i style="--c:#c46cff">Glow Jungle</i></p></div>
+</article>
+<article class="card foe" data-s="coast porto deep subway jungle" style="--c:#ff9a3c">
+  <div class="foe-img"><span class="spr anim" style="width:144px;height:52px;--n:2;--d:0.80s;"><img src="img/en_crocodilo.webp" alt="Crocodilo Mecânico" width="288" height="52" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Crocodilo Mecânico</h4>
+  <p class="meta"><b class="tier">TANQUE</b> · ♥ 220 · ✸ 15</p>
+  <p>Rasteiro e blindado; abre a boca e dá uma mordida com avanço.</p><p class="where"><i style="--c:#4dffd2">Cyber-Coast</i><i style="--c:#5ec8ff">Porto Automatizado</i><i style="--c:#36e7ff">Cyber Deep</i><i style="--c:#36d8ff">Data Subway</i><i style="--c:#c46cff">Glow Jungle</i></p></div>
+</article>
+<article class="card foe" data-s="casino cage" style="--c:#ff9a3c">
+  <div class="foe-img"><span class="spr anim" style="width:104px;height:70px;--n:2;--d:0.33s;"><img src="img/en_touro.webp" alt="Touro de Brasa" width="208" height="70" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Touro de Brasa</h4>
+  <p class="meta"><b class="tier">TANQUE</b> · ♥ 180 · ✸ 15</p>
+  <p>Investida longa em linha reta; para ao bater na parede.</p><p class="where"><i style="--c:#ffd84d">Cyber Casino</i><i style="--c:#ff4d6a">The Cage</i></p></div>
+</article>
+<article class="card foe" data-s="fabrica cage torre" style="--c:#ff9a3c">
+  <div class="foe-img"><span class="spr anim" style="width:150px;height:80px;--n:2;--d:0.40s;"><img src="img/en_rinoceronte.webp" alt="Rinoceronte Fornalha" width="300" height="80" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Rinoceronte Fornalha</h4>
+  <p class="meta"><b class="tier">TANQUE</b> · ♥ 320 · ✸ 18</p>
+  <p>Investida ainda mais longa, e quase nada o empurra.</p><p class="where"><i style="--c:#ff9a3c">Fábrica de Robôs</i><i style="--c:#ff4d6a">The Cage</i><i style="--c:#e8eeff">Torre Corporativa</i></p></div>
+</article>
+<article class="card foe" data-s="deep" style="--c:#ff4df0">
+  <div class="foe-img"><span class="spr anim" style="width:112px;height:83px;--n:4;--d:0.50s;"><img src="img/en_querubim.webp" alt="Querubim-Tubarão" width="448" height="83" loading="lazy" decoding="async"></span></div>
+  <div class="foe-tx"><h4>Querubim-Tubarão</h4>
+  <p class="meta"><b class="tier">MINI-CHEFE</b> · VOA · ♥ 380 · ✸ 16</p>
+  <p>Mini-chefe do Cyber Deep: aparece uma vez no meio do setor, ronda, abre a boca e dá um bote que morde.</p><p class="where"><i style="--c:#36e7ff">Cyber Deep</i></p></div>
+</article></div>
+  <p class="fine">♥ vida base · ✸ dano base. A horda ganha vida e dano conforme o setor avança.</p>
+
+  <h3 class="h3" style="--c:var(--pink)">Chefões</h3>
+  <div class="boss-rules"><p>Um chefão guarda cada setor (no Infinito) e cada mapa (na Jornada), na ordem Polvo → Quimera → Glitch → T-Rex → Titã → Rainha → Sentinela. Tem barra de vida no topo, fases que mudam o ritmo e golpes sempre avisados. Não sofre empurrão nem atordoamento. Derrotado, garante <b>level up, Sucata, cápsula de vida grande e ◆ 5 Cyber-Moedas</b>.</p></div>
+  <div class="bosses"><article class="card boss" style="--c:#ff4df0">
+  <div class="boss-img"><span class="spr anim" style="width:202px;height:155px;--n:4;--d:1.60s;"><img src="img/boss_polvo.webp" alt="POLVO DE NEON" width="808" height="155" loading="lazy" decoding="async"></span></div>
+  <div><h4>POLVO DE NEON</h4><p class="meta">♥ 900 de vida base · VOA</p>
+  <ul class="atk"><li>Leque de orbes (mais orbes a cada fase)</li><li>Mergulho em você, e fica baixo e exposto por 1,3 s: hora de bater</li><li>Chama morcegos</li><li>Giro: anel de orbes em volta</li><li>Fase 3: chuva de tinta caindo do teto</li></ul></div>
+</article>
+<article class="card boss" style="--c:#ffc94d">
+  <div class="boss-img"><span class="spr anim" style="width:166px;height:118px;--n:4;--d:1.60s;"><img src="img/boss_quimera.webp" alt="QUIMERA CIBERNÉTICA" width="664" height="118" loading="lazy" decoding="async"></span></div>
+  <div><h4>QUIMERA CIBERNÉTICA</h4><p class="meta">♥ 2600 de vida base</p>
+  <ul class="atk"><li>3 fases marcadas pela cor: dourado → verde → ciano, mais rápida a cada uma</li><li>Garrada de perto e bote com ondas de choque ao cair</li><li>Cauda: orbes em arco; chicote da cauda atrás dela</li><li>Rugido que empurra você (na fase 3 chama 2 Scrap-Hounds)</li><li>Investida e botes em sequência</li></ul></div>
+</article>
+<article class="card boss" style="--c:#5ef0ff">
+  <div class="boss-img"><span class="spr anim" style="width:198px;height:161px;--n:2;--d:0.67s;"><img src="img/boss_dragao.webp" alt="O GRANDE GLITCH" width="396" height="161" loading="lazy" decoding="async"></span></div>
+  <div><h4>O GRANDE GLITCH</h4><p class="meta">♥ 3200 de vida base · VOA</p>
+  <ul class="atk"><li>Laser magenta que varre a tela (linha de aviso piscando antes)</li><li>Cubos de glitch em leque</li><li>Teleporte para o outro lado (fase 2+)</li><li>Rasante que atravessa você em arco</li><li>Fase 3: chuva de cubos</li></ul></div>
+</article>
+<article class="card boss" style="--c:#ff5a1a">
+  <div class="boss-img"><span class="spr anim" style="width:180px;height:156px;--n:4;--d:1.00s;"><img src="img/boss_trex.webp" alt="T-REX CIBERNÉTICO" width="720" height="156" loading="lazy" decoding="async"></span></div>
+  <div><h4>T-REX CIBERNÉTICO</h4><p class="meta">♥ 5500 de vida base</p>
+  <ul class="atk"><li>Pisão com ondas de choque pelo chão: pule!</li><li>Mordida de perto; rabada se você ficar nas costas dele</li><li>Fase 2 (visor vermelho, abaixo de 50%): pisão duplo, investida e 3 lasers</li><li>Pedras caindo do teto no pisão da fase 2</li></ul></div>
+</article>
+<article class="card boss" style="--c:#ff9a3c">
+  <div class="boss-img"><span class="spr anim" style="width:143px;height:170px;--n:3;--d:0.50s;"><img src="img/boss_tita.webp" alt="TITÃ SOBRECARREGADO" width="429" height="170" loading="lazy" decoding="async"></span></div>
+  <div><h4>TITÃ SOBRECARREGADO</h4><p class="meta">♥ 4200 de vida base</p>
+  <ul class="atk"><li>Salto esmagador na sua direção, com ondas de choque para os dois lados</li><li>Fase 2+: chuva de orbes depois do salto</li><li>Soco de perto</li><li>Anel de orbes disparado do núcleo</li></ul></div>
+</article>
+<article class="card boss" style="--c:#ff4df0">
+  <div class="boss-img"><span class="spr anim" style="width:230px;height:126px;--n:3;--d:0.50s;"><img src="img/boss_rainha.webp" alt="A RAINHA DA SUCATA" width="690" height="126" loading="lazy" decoding="async"></span></div>
+  <div><h4>A RAINHA DA SUCATA</h4><p class="meta">♥ 3000 de vida base · VOA</p>
+  <ul class="atk"><li>Paira acima e de lado</li><li>Investida reta na sua altura (fase 2+: solta um anel de sucata ao parar)</li><li>Leque de orbes</li><li>Chuva de sucata</li></ul></div>
+</article>
+<article class="card boss" style="--c:#4dffa6">
+  <div class="boss-img"><span class="spr anim" style="width:123px;height:164px;--n:4;--d:0.50s;"><img src="img/boss_sentinela.webp" alt="O SENTINELA DE DADOS" width="492" height="164" loading="lazy" decoding="async"></span></div>
+  <div><h4>O SENTINELA DE DADOS</h4><p class="meta">♥ 3400 de vida base · VOA</p>
+  <ul class="atk"><li>Some num glitch e reaparece em cima de você</li><li>Mergulho esmagador com ondas de dados</li><li>Anel de cubos</li><li>Leque de orbes</li></ul></div>
+</article></div>
+  <h3 class="h3" style="--c:var(--cyan)">Chefões do Cyber Deep</h3>
+  <p>No setor submerso, o guardião é a versão aquática de um chefão (um dos dois é sorteado por partida).</p>
+  <div class="bosses"><article class="card boss" style="--c:#ff9a3c">
+  <div class="boss-img"><span class="spr anim" style="width:199px;height:162px;--n:3;--d:0.60s;"><img src="img/boss_mecha.webp" alt="MECHA-POVOADOR" width="597" height="162" loading="lazy" decoding="async"></span></div>
+  <div><h4>MECHA-POVOADOR</h4><p class="meta">♥ 2000 de vida base · SETOR SUBMERSO</p>
+  <ul class="atk"><li>Variação aquática do Polvo: um escafandro gigante no fundo</li><li>Tentáculo no chão com ondas elétricas dos dois lados</li><li>Canhão da cabeça em leque; anel de choque (fase 2+)</li><li>Salto pesado que solta ondas (na fase 3 derruba destroços)</li></ul></div>
+</article>
+<article class="card boss" style="--c:#5ef0ff">
+  <div class="boss-img"><span class="spr anim" style="width:230px;height:100px;--n:2;--d:0.67s;"><img src="img/boss_serpente.webp" alt="O GRANDE GLITCH (SERPENTE)" width="460" height="100" loading="lazy" decoding="async"></span></div>
+  <div><h4>O GRANDE GLITCH (SERPENTE)</h4><p class="meta">♥ 1800 de vida base · VOA · SETOR SUBMERSO</p>
+  <ul class="atk"><li>Variação aquática do Dragão: nada em ondas</li><li>Sopro de plasma que varre</li><li>Travessia rápida na sua altura</li><li>Anel de bolhas elétricas e cardume de Peixes-Lanterna (fase 2+)</li></ul></div>
+</article></div>
+</div></section>
+
+<section id="cenarios"><div class="wrap">
+  <h2 class="h2" style="--c:var(--lilac)">Cenários</h2><p class="kicker" style="--c:var(--lilac)">13 setores até o topo da cidade</p>
+  <div class="sectors"><article class="card sector" style="--c:#ff4df0">
+  <div class="shot"><img src="img/sec_distrito.webp" alt="DISTRITO NEON no jogo" width="396" height="360" loading="lazy" decoding="async"><span class="num">01</span></div>
+  <div class="sec-tx"><h4>DISTRITO NEON</h4><p class="sub">Onde tudo começa</p><p>Prédios cobertos de letreiros, chuva fina e telhados de grade. É o bairro de origem do bando e o primeiro setor de toda partida.</p><p class="foes"><b>Horda:</b> Cyber-Rato · Drone Olho · Morcego Cibernético · Scrap-Hound · Urso Cibernético</p></div>
+</article>
+<article class="card sector" style="--c:#4dffd2">
+  <div class="shot"><img src="img/sec_coast.webp" alt="CYBER-COAST no jogo" width="396" height="360" loading="lazy" decoding="async"><span class="num">02</span></div>
+  <div class="sec-tx"><h4>CYBER-COAST</h4><p class="sub">Orla cibernética</p><p>Calçadão de coqueiros neon à beira de um mar escuro, com bancos, letreiros de praia e bares que nunca fecham.</p><p class="foes"><b>Horda:</b> Cyber-Rato · Medusa Elétrica · Ornitorrinco Atirador · Caranguejo Blindado · Scrap-Hound · Crocodilo Mecânico</p></div>
+</article>
+<article class="card sector" style="--c:#ffb03c">
+  <div class="shot"><img src="img/sec_favelas.webp" alt="FAVELAS DE DADOS no jogo" width="396" height="360" loading="lazy" decoding="async"><span class="num">03</span></div>
+  <div class="sec-tx"><h4>FAVELAS DE DADOS</h4><p class="sub">Submundo vertical</p><p>Barracos empilhados até o céu laranja de fumaça, fios por todo lado e plataformas enferrujadas. Aqui roda a internet clandestina da cidade.</p><p class="foes"><b>Horda:</b> Cyber-Rato · Esquilo Bombardeiro · Macaco Hacker · Rato-Asa Bombardeiro · Bode-Foguete · Scrap-Hound · Urso Cibernético</p></div>
+</article>
+<article class="card sector" style="--c:#5ec8ff">
+  <div class="shot"><img src="img/sec_porto.webp" alt="PORTO AUTOMATIZADO no jogo" width="396" height="360" loading="lazy" decoding="async"><span class="num">04</span></div>
+  <div class="sec-tx"><h4>PORTO AUTOMATIZADO</h4><p class="sub">Doca 7</p><p>Contêineres, guindastes, esteiras e semáforos de carga que trabalham sozinhos, dia e noite.</p><p class="foes"><b>Horda:</b> Ornitorrinco Atirador · Drone Olho · Morcego Cibernético · Caranguejo Blindado · Leão-Marinho Jato · Drone Voador · Panda de Guerra · Crocodilo Mecânico</p></div>
+</article>
+<article class="card sector" style="--c:#36e7ff">
+  <div class="shot"><img src="img/sec_deep.webp" alt="CYBER DEEP no jogo" width="396" height="360" loading="lazy" decoding="async"><span class="num">05</span></div>
+  <div class="sec-tx"><h4>CYBER DEEP</h4><p class="sub">Abismo cibernético</p><p>Setor submerso: aqui não se pula, se nada. PULO vira braçada e DASH vira torpedo. Recifes de fibra óptica, anêmonas balançando e um letreiro que pisca no fundo.</p><p class="foes"><b>Horda:</b> Peixe-Lanterna Glitch · Medusa Elétrica · Ouriço Neon · Cyber-Lula · Caranguejo Blindado · Tubarão-Torpedo · Leão-Marinho Jato · Crocodilo Mecânico · Querubim-Tubarão</p></div>
+</article>
+<article class="card sector" style="--c:#ff9a3c">
+  <div class="shot"><img src="img/sec_fabrica.webp" alt="FÁBRICA DE ROBÔS no jogo" width="396" height="360" loading="lazy" decoding="async"><span class="num">06</span></div>
+  <div class="sec-tx"><h4>FÁBRICA DE ROBÔS</h4><p class="sub">Linha de montagem</p><p>Esteiras, braços robóticos e faíscas laranja: é aqui que a horda é montada, peça por peça.</p><p class="foes"><b>Horda:</b> Drone Olho · Aranha-Drone · Rato-Asa Bombardeiro · Texugo Voltaico · Drone Voador · Leão-Marinho Jato · Rinoceronte Fornalha · Panda de Guerra</p></div>
+</article>
+<article class="card sector" style="--c:#36d8ff">
+  <div class="shot"><img src="img/sec_subway.webp" alt="DATA SUBWAY no jogo" width="396" height="360" loading="lazy" decoding="async"><span class="num">07</span></div>
+  <div class="sec-tx"><h4>DATA SUBWAY</h4><p class="sub">Centro de dados subterrâneo</p><p>Um metrô abandonado que virou centro de dados: trilhos, cabos pelo chão e racks de servidores zumbindo.</p><p class="foes"><b>Horda:</b> Cyber-Rato · Aranha-Drone · Rato-Asa Bombardeiro · Morcego Cibernético · Texugo Voltaico · Scrap-Hound · Crocodilo Mecânico</p></div>
+</article>
+<article class="card sector" style="--c:#4dff8c">
+  <div class="shot"><img src="img/sec_genelab.webp" alt="GENELAB no jogo" width="396" height="360" loading="lazy" decoding="async"><span class="num">08</span></div>
+  <div class="sec-tx"><h4>GENELAB</h4><p class="sub">Laboratório de clonagem genética</p><p>Tubos com criaturas em formação, braços robóticos e luz verde-ácido. Os sapos e camaleões da horda saem daqui.</p><p class="foes"><b>Horda:</b> Sapo Ácido · Medusa Elétrica · Aranha-Drone · Camaleão Fantasma · Vespa Zangão · Gorila de Aço · Urso Cibernético</p></div>
+</article>
+<article class="card sector" style="--c:#ff6ad5">
+  <div class="shot"><img src="img/sec_mall.webp" alt="NEON MALL no jogo" width="396" height="360" loading="lazy" decoding="async"><span class="num">09</span></div>
+  <div class="sec-tx"><h4>NEON MALL</h4><p class="sub">Shopping de hologramas</p><p>Vitrines de hologramas, fliperamas e uma liquidação de 50% que nunca termina.</p><p class="foes"><b>Horda:</b> Drone Olho · Macaco Hacker · Esquilo Bombardeiro · Canguru Boxeador · Coruja de Vigilância · Cyber-Lobo · Panda de Guerra</p></div>
+</article>
+<article class="card sector" style="--c:#ffd84d">
+  <div class="shot"><img src="img/sec_casino.webp" alt="CYBER CASINO no jogo" width="396" height="360" loading="lazy" decoding="async"><span class="num">10</span></div>
+  <div class="sec-tx"><h4>CYBER CASINO</h4><p class="sub">Distrito dos cassinos</p><p>Roletas, caça-níqueis e tapete vermelho. O lugar onde a cidade aposta tudo.</p><p class="foes"><b>Horda:</b> Rato-Asa Bombardeiro · Drone Olho · Macaco Hacker · Morcego Cibernético · Canguru Boxeador · Cyber-Lobo · Coruja de Vigilância · Vespa Zangão · Gorila de Aço · Touro de Brasa</p></div>
+</article>
+<article class="card sector" style="--c:#ff4d6a">
+  <div class="shot"><img src="img/sec_cage.webp" alt="THE CAGE no jogo" width="396" height="360" loading="lazy" decoding="async"><span class="num">11</span></div>
+  <div class="sec-tx"><h4>THE CAGE</h4><p class="sub">Arena de combate clandestina</p><p>Cerca elétrica, pilhas de pneus e arquibancada sob holofotes. Os monstros mais pesados lutam aqui.</p><p class="foes"><b>Horda:</b> Cyber-Rato · Esquilo Bombardeiro · Ouriço Neon · Canguru Boxeador · Bode-Foguete · Scrap-Hound · Touro de Brasa · Rinoceronte Fornalha · Gorila de Aço</p></div>
+</article>
+<article class="card sector" style="--c:#c46cff">
+  <div class="shot"><img src="img/sec_jungle.webp" alt="GLOW JUNGLE no jogo" width="396" height="360" loading="lazy" decoding="async"><span class="num">12</span></div>
+  <div class="sec-tx"><h4>GLOW JUNGLE</h4><p class="sub">Jardins biocibernéticos</p><p>Árvores de neon roxo, raízes gigantes, cipós de luz e cachoeiras que brilham no escuro.</p><p class="foes"><b>Horda:</b> Vaga-lume Bomba · Sapo Ácido · Ouriço Neon · Camaleão Fantasma · Alce de Plasma · Vespa Zangão · Crocodilo Mecânico · Gorila de Aço</p></div>
+</article>
+<article class="card sector" style="--c:#e8eeff">
+  <div class="shot"><img src="img/sec_torre.webp" alt="TORRE CORPORATIVA no jogo" width="396" height="360" loading="lazy" decoding="async"><span class="num">13</span></div>
+  <div class="sec-tx"><h4>TORRE CORPORATIVA</h4><p class="sub">O topo da cidade</p><p>Escritórios de vidro e hologramas corporativos no 100º andar. Fim do caminho e origem do sinal.</p><p class="foes"><b>Horda:</b> Drone Olho · Vaga-lume Bomba · Aranha-Drone · Coruja de Vigilância · Drone Voador · Cyber-Lobo · Leão-Marinho Jato · Panda de Guerra · Rinoceronte Fornalha · Urso Cibernético</p></div>
+</article></div>
+  <p class="fine">Imagens capturadas do jogo (versão 0.22 teste).</p>
+</div></section>
+
+<section id="baixar"><div class="wrap">
+  <h2 class="h2" style="--c:var(--pink)">Baixar e testar</h2><p class="kicker" style="--c:var(--pink)">Fase de testes · Android</p>
+  <div class="duo">
+    <div>
+      <p class="lead">O Neko G está em <b>fase de testes</b>: o jogo muda quase todo dia e sua opinião decide o que vem a seguir. O APK de teste sai automaticamente do GitHub a cada atualização.</p>
+      <ol class="steps">
+        <li>Entre (ou crie uma conta grátis) no <b>GitHub</b>. Sem conta, o GitHub não libera o download.</li>
+        <li>Abra a página <a href="https://github.com/renanxaviier/neko-g/actions/workflows/android-apk.yml" target="_blank" rel="noopener">APK Android (teste)</a>, toque na execução mais recente (no topo, com ✓ verde).</li>
+        <li>Em <b>Artifacts</b>, baixe <b>neko-g-apk-&lt;número&gt;</b>. Vem um .zip: abra e extraia o arquivo .apk.</li>
+        <li>Toque no .apk e permita <b>instalar apps de fontes desconhecidas</b> quando o Android pedir.</li>
+        <li>Jogue! Depois, conte o que achou pelo botão <b>💬 Feedback</b> do jogo.</li>
+      </ol>
+      <a class="btn" href="https://github.com/renanxaviier/neko-g/actions/workflows/android-apk.yml" target="_blank" rel="noopener">⬇ Baixar APK (teste)</a>
+    </div>
+    <div class="card" style="--c:var(--cyan)">
+      <h4>O que pedimos aos testadores</h4>
+      <ul class="atk">
+        <li>Jogar pelo menos 3 partidas (Jornada e Infinito) e trocar de personagem.</li>
+        <li>Testar as Opções: tamanho e transparência dos botões, modo canhoto, ataque automático ligado e desligado.</li>
+        <li>Mandar o feedback pelo botão 💬 (nota, assuntos e texto; o diagnóstico do aparelho vai junto).</li>
+        <li>Contar: ataque automático ou manual? Onde travou ou ficou confuso? A dificuldade subiu rápido demais?</li>
+      </ul>
+      <div class="card play" style="margin-top:14px"><b>EM BREVE NA GOOGLE PLAY</b><p class="fine" style="margin:6px 0 0">Antes da loja vem um teste fechado com testadores inscritos. Fique de olho.</p></div>
+    </div>
+  </div>
+</div></section>
+</main>
+
+<footer>
+  <div class="mini-logo">NEKO <b>G</b></div>
+  <p>© 2026 RX Games · Neko G versão 0.22 teste</p>
+  <p class="fine">Jogo em desenvolvimento. Nomes, valores e artes podem mudar.</p>
+</footer>
+<script>
+// Filtro do bestiário por cenário
+(function () {
+  var chips = document.querySelectorAll('.chip'), foes = document.querySelectorAll('.foe'), out = document.getElementById('foe-count');
+  function apply(f) {
+    var n = 0;
+    foes.forEach(function (el) { var ok = f === 'all' || (' ' + el.dataset.s + ' ').indexOf(' ' + f + ' ') >= 0; el.hidden = !ok; if (ok) n++; });
+    out.textContent = n + (n === 1 ? ' inimigo' : ' inimigos') + (f === 'all' ? ' no total' : ' neste cenário');
+  }
+  chips.forEach(function (c) { c.addEventListener('click', function () { chips.forEach(function (x) { x.classList.toggle('on', x === c); x.setAttribute('aria-pressed', x === c); }); apply(c.dataset.f); }); });
+  apply('all');
+})();
+// Destaca no menu a seção visível
+(function () {
+  if (!('IntersectionObserver' in window)) return;
+  var links = {}; document.querySelectorAll('.nav li a').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  window.addEventListener('scroll', function () { if (window.scrollY < 300) for (var k in links) links[k].classList.remove('on'); }, { passive: true });
+  var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting && links[e.target.id]) { for (var k in links) links[k].classList.toggle('on', k === e.target.id); } }); }, { rootMargin: '-45% 0px -50% 0px' });
+  document.querySelectorAll('main section[id]').forEach(function (s) { io.observe(s); });
+})();
+</script>
+</body>
+</html>
