@@ -107,8 +107,12 @@ else console.warn('[aviso] sem android-app/google-services.json: login com Googl
 const vars = join(root, 'android', 'variables.gradle');
 if (existsSync(vars)) {
   let v = readFileSync(vars, 'utf8');
-  if (!v.includes('rgcfaIncludeGoogle')) { v = v.replace(/ext\s*\{/, 'ext {\n    rgcfaIncludeGoogle = true'); writeFileSync(vars, v); }
-  console.log('✔ variables.gradle: rgcfaIncludeGoogle = true');
+  // Credential Manager recente: as versões antigas falham no Android 16 (ex.: Galaxy S25)
+  if (!v.includes('rgcfaIncludeGoogle')) v = v.replace(/ext\s*\{/, "ext {\n    rgcfaIncludeGoogle = true");
+  if (/androidxCredentialsVersion\s*=/.test(v)) v = v.replace(/androidxCredentialsVersion\s*=\s*'[^']*'/, "androidxCredentialsVersion = '1.5.0'");
+  else v = v.replace(/ext\s*\{/, "ext {\n    androidxCredentialsVersion = '1.5.0'");
+  writeFileSync(vars, v);
+  console.log('✔ variables.gradle: rgcfaIncludeGoogle = true, androidxCredentialsVersion = 1.5.0');
 }
 
 // 3d) Assinatura do APK de teste SEMPRE com android-app/keystore/debug.keystore

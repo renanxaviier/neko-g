@@ -87,7 +87,7 @@ jobs:
           SIGNER=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)apksigner
           $SIGNER verify --print-certs "$APK" | tee /tmp/certs.txt
           grep -i "SHA-1 digest: 18b0078ede440e99407b34156a244837017c34e5" /tmp/certs.txt || { echo "::error::APK assinado com outra chave (SHA-1 diferente da cadastrada no Firebase)"; exit 1; }
-          grep -rho 'default_web_client_id">[^<]*' android-app/android/app/build/generated/res/ || echo "::warning::default_web_client_id não gerado"
+          grep -rh 'default_web_client_id' android-app/android/app/build/ || echo "::warning::default_web_client_id não gerado"
 
       - uses: actions/upload-artifact@v4
         with:
