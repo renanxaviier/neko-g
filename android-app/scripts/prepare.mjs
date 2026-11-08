@@ -103,6 +103,37 @@ const gsj = join(root, 'google-services.json');
 if (existsSync(gsj)) { copyFileSync(gsj, join(root, 'android', 'app', 'google-services.json')); console.log('✔ google-services.json copiado'); }
 else console.warn('[aviso] sem android-app/google-services.json: login com Google não vai funcionar no app (veja docs/contas.md)');
 
+// 3c) Login com Google nativo (plugin @capacitor-firebase/authentication): liga o provedor Google no Gradle
+const vars = join(root, 'android', 'variables.gradle');
+if (existsSync(vars)) {
+  let v = readFileSync(vars, 'utf8');
+  if (!v.includes('rgcfaIncludeGoogle')) { v = v.replace(/ext\s*\{/, 'ext {\n    rgcfaIncludeGoogle = true'); writeFileSync(vars, v); }
+  console.log('✔ variables.gradle: rgcfaIncludeGoogle = true');
+}
+
+// 3d) Assinatura do APK de teste SEMPRE com android-app/keystore/debug.keystore
+// (a SHA-1 dela é a cadastrada no Firebase; com outra chave o login com Google falha com "[16] Account reauth failed")
+const appGradle = join(root, 'android', 'app', 'build.gradle');
+const ks = join(root, 'keystore', 'debug.keystore');
+if (existsSync(appGradle) && existsSync(ks)) {
+  let g = readFileSync(appGradle, 'utf8');
+  if (!g.includes('nekoDebugKey')) {
+    g = g.replace(/android\s*\{/, `android {
+    signingConfigs {
+        nekoDebugKey {   // gerado por prepare.mjs
+            storeFile file('${ks.replace(/\\/g, '/')}')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }`);
+    g = g.replace(/buildTypes\s*\{/, `buildTypes {
+        debug { signingConfig signingConfigs.nekoDebugKey }`);
+    writeFileSync(appGradle, g);
+  }
+  console.log('✔ build.gradle: APK de teste assinado com keystore/debug.keystore');
+}
+
 // 4) Ícone e tela de abertura a partir de resources/ (opcional: não para o build se falhar)
 try {
   run('npx capacitor-assets generate --android --iconBackgroundColor "#07051a" --splashBackgroundColor "#07051a"');

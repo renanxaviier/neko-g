@@ -35,7 +35,13 @@ export const AUTH_ERRORS = {
   offline: 'Sem conexão: o progresso fica salvo neste aparelho por enquanto.',
   'bad-nick': 'Apelido: 3 a 16 letras, números, espaço, _ ou -.',
 };
-export const errorText = (e) => AUTH_ERRORS[e && e.code] || `Não deu certo (${(e && (e.code || e.message)) || 'erro'}).`;
+export const errorText = (e) => {
+  const msg = String((e && e.message) || '');
+  // Login nativo do Google recusado pelo Google Play Services (chave do app ou cliente OAuth ainda não reconhecidos)
+  if (/reauth failed|\[16\]|ApiException: ?10/i.test(msg)) return 'O Google recusou o login neste aparelho (código 16). Tente de novo em alguns minutos; se continuar, use e-mail e senha.';
+  if (/cancel/i.test(msg)) return 'Login com Google cancelado.';
+  return AUTH_ERRORS[e && e.code] || `Não deu certo (${(e && (e.code || e.message)) || 'erro'}).`;
+};
 
 // ======================= Firebase =======================
 
