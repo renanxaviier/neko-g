@@ -1,6 +1,12 @@
 # Gera o APK de teste do Neko G na nuvem (GitHub Actions), sem precisar instalar o Android Studio.
 # Como usar: suba o projeto num repositório do GitHub → aba Actions → "APK Android (teste)" → Run workflow.
-# Ao terminar, baixe o arquivo em "Artifacts" (neko-g-apk) e instale no celular.
+# Ao terminar, baixe o arquivo em "Artifacts" (neko-g-apk-<número>) e instale no celular.
+#
+# v0.17 — envios mais eficientes:
+#  - só o envio mais recente compila (um envio novo cancela o anterior que ainda estava rodando);
+#  - "[skip apk]" na mensagem do commit pula a compilação (ex.: só documentação);
+#  - cache do npm e do Gradle (compila mais rápido e depende menos da rede);
+#  - etapas que baixam coisas tentam de novo até 3 vezes (as falhas de 08/11 foram tempo esgotado de rede).
 name: APK Android (teste)
 
 on:
@@ -8,9 +14,15 @@ on:
   push:
     paths: ['web/**', 'android-app/**', '.github/workflows/android-apk.yml']
 
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
+    if: ${{ !contains(github.event.head_commit.message, '[skip apk]') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -23,9 +35,30 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Instalar dependências
+      - name: Cache do npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('android-app/package.json') }}
+          restore-keys: npm-${{ runner.os }}-
+
+      - name: Cache do Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android-app/package.json') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Instalar dependências (até 3 tentativas)
         working-directory: android-app
-        run: npm install
+        run: |
+          for i in 1 2 3; do
+            npm install --no-audit --no-fund && exit 0
+            echo "npm install falhou (tentativa $i); tentando de novo em 20 s"; sleep 20
+          done
+          exit 1
 
       - name: Preparar projeto Android
         working-directory: android-app
@@ -35,11 +68,20 @@ jobs:
       - name: Chave de teste fixa
         run: mkdir -p ~/.android && cp android-app/keystore/debug.keystore ~/.android/debug.keystore
 
-      - name: Compilar APK (debug)
+      - name: Compilar APK (debug, até 3 tentativas)
         working-directory: android-app/android
-        run: chmod +x gradlew && ./gradlew assembleDebug
+        run: |
+          chmod +x gradlew
+          # o download do Gradle tinha limite de 10 s: sobe para 2 min
+          sed -i 's/^networkTimeout=.*/networkTimeout=120000/' gradle/wrapper/gradle-wrapper.properties || true
+          for i in 1 2 3; do
+            ./gradlew assembleDebug --no-daemon && exit 0
+            echo "Gradle falhou (tentativa $i); tentando de novo em 20 s"; sleep 20
+          done
+          exit 1
 
       - uses: actions/upload-artifact@v4
         with:
-          name: neko-g-apk
+          name: neko-g-apk-${{ github.run_number }}
           path: android-app/android/app/build/outputs/apk/debug/*.apk
+          retention-days: 14

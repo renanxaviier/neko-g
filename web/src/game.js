@@ -211,6 +211,14 @@ export class Game {
     this.hp = Math.min(this.maxHp, this.hp + Math.ceil(this.maxHp * f));
   }
 
+  // Pausa de impacto dos golpes comuns: curta e no máximo uma a cada RUN.hitStopGap s.
+  // (Antes cada golpe que acertava congelava 25 ms: com ataque contínuo parecia queda de quadros.)
+  addHitStop(t) {
+    if (this.time - (this._hsAt || -9) < RUN.hitStopGap) return;
+    this._hsAt = this.time;
+    this.hitStop = Math.max(this.hitStop, t);
+  }
+
   setMaxHpMult(m) {
     const old = this.maxHp;
     this.maxHp = Math.round(this.maxHpBase * m);
@@ -246,7 +254,7 @@ export class Game {
     const hpChance = hd.chance[d.tier] * (this.hp / this.maxHp < hd.lowHp ? hd.lowHpMult : 1);
     if (this.rng.chance(hpChance)) this.pickups.spawn(PK.HEALTH, e.cx, e.cy, hd.heal[d.tier]);
     this.fx.kill(e);
-    if (d.tier !== 'weak') this.hitStop = Math.max(this.hitStop, 0.035);
+    if (d.tier !== 'weak') this.addHitStop(0.03);
   }
 
   // ---------------- Setores e portal (GDD 3.1b) ----------------
@@ -793,7 +801,7 @@ const SETTINGS_KEY = 'nekog.settings.v1';
 function loadSettings() {
   let s = null;
   try { s = JSON.parse(localStorage.getItem(SETTINGS_KEY)); } catch { s = null; }
-  return { shake: true, numbers: true, ...(s || {}) };
+  return { shake: true, numbers: true, perf: false, ...(s || {}) };
 }
 function saveSettings(s) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch { /* sem armazenamento */ } }
 

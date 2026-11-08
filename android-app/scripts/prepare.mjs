@@ -45,6 +45,55 @@ if (!xml.includes('com.google.android.gms.ads.APPLICATION_ID')) {
 writeFileSync(manifest, xml);
 console.log('✔ AndroidManifest ajustado (retrato + AdMob)');
 
+// 3a) Tela de 90/120 Hz: o WebView costuma ficar preso em 60 Hz se o app não pedir o modo mais rápido.
+// MainActivity pede o modo de maior taxa na resolução atual (S25 Ultra etc.) ao abrir e ao voltar ao app.
+const pkgDir = join(root, 'android', 'app', 'src', 'main', 'java', 'com', 'nekog', 'game');
+const mainAct = join(pkgDir, 'MainActivity.java');
+if (existsSync(pkgDir)) {
+  writeFileSync(mainAct, `package com.nekog.game;
+
+import android.os.Build;
+import android.os.Bundle;
+import android.view.Display;
+import android.view.WindowManager;
+import com.getcapacitor.BridgeActivity;
+
+// Gerado por android-app/scripts/prepare.mjs (não editar aqui).
+public class MainActivity extends BridgeActivity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        requestHighRefreshRate();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        requestHighRefreshRate();
+    }
+
+    // Escolhe o modo de tela com a maior taxa de atualização na mesma resolução.
+    private void requestHighRefreshRate() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
+        try {
+            Display d = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ? getDisplay() : getWindowManager().getDefaultDisplay();
+            if (d == null) return;
+            Display.Mode cur = d.getMode(), best = cur;
+            for (Display.Mode m : d.getSupportedModes()) {
+                if (m.getPhysicalWidth() == cur.getPhysicalWidth() && m.getPhysicalHeight() == cur.getPhysicalHeight()
+                        && m.getRefreshRate() > best.getRefreshRate()) best = m;
+            }
+            WindowManager.LayoutParams lp = getWindow().getAttributes();
+            lp.preferredDisplayModeId = best.getModeId();
+            lp.preferredRefreshRate = best.getRefreshRate();
+            getWindow().setAttributes(lp);
+        } catch (Exception ignored) { }
+    }
+}
+`);
+  console.log('✔ MainActivity: pede a maior taxa de tela (90/120 Hz)');
+} else console.warn('[aviso] pasta do MainActivity não encontrada: taxa de tela fica no padrão do sistema');
+
 // 3b) Firebase: google-services.json (baixado do Console do Firebase, app Android com.nekog.game).
 // O modelo do Capacitor já aplica o plugin do Google Services quando este arquivo existe.
 const gsj = join(root, 'google-services.json');

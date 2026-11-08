@@ -67,25 +67,33 @@ function resize() {
 }
 window.addEventListener('resize', () => { appW = app.clientWidth; appH = app.clientHeight; resize(); });
 
-// Mede o ritmo real dos quadros (janela de 2 s) e ajusta a resolução
-const fpsMon = { t: 0, n: 0, slow: 0, fps: 60, hz: 60, good: 0 };
+// Mede o ritmo real dos quadros (janela de 2 s) e ajusta a resolução.
+// A taxa da tela é reestimada a cada janela (o Android muda entre 60/90/120 Hz sozinho, telas LTPO):
+// período da tela = intervalo típico mais curto (percentil 20). "Lento" = quadro que perdeu a vez da tela.
+// Só mexe na resolução quando a taxa da tela ficou estável entre duas janelas.
+const fpsMon = { t: 0, n: 0, fps: 60, hz: 60, good: 0, target: 1000 / 60, slowShare: 0 };
 window.__fps = fpsMon;
+const ivl = new Float32Array(1024);
 function watchFps(dtMs) {
-  fpsMon.t += dtMs; fpsMon.n++;
-  if (dtMs > fpsMon.target * 1.6) fpsMon.slow++;
+  fpsMon.t += dtMs;
+  if (fpsMon.n < ivl.length) ivl[fpsMon.n] = dtMs;
+  fpsMon.n++;
   if (fpsMon.t < 2000) return;
+  const n = Math.min(fpsMon.n, ivl.length), sorted = ivl.slice(0, n).sort();
+  const period = Math.max(1000 / 144, sorted[Math.floor(n * 0.2)]);
+  let slow = 0;
+  for (let i = 0; i < n; i++) if (ivl[i] > period * 1.6) slow++;
+  const stable = Math.abs(period - fpsMon.target) < fpsMon.target * 0.2;
+  fpsMon.target = period; fpsMon.hz = Math.round(1000 / period);
   fpsMon.fps = Math.round((fpsMon.n * 1000) / fpsMon.t);
-  const slowShare = fpsMon.slow / fpsMon.n;
-  if (game.isSimulating) {
-    if (slowShare > 0.12 && resStep < RES_STEPS.length - 1) { resStep++; resize(); fpsMon.good = 0; }
-    else if (slowShare < 0.02 && resStep > 0 && ++fpsMon.good >= 5) { resStep--; resize(); fpsMon.good = 0; }
+  fpsMon.slowShare = slow / n;
+  if (game.isSimulating && stable) {
+    if (fpsMon.slowShare > 0.12 && resStep < RES_STEPS.length - 1) { resStep++; resize(); fpsMon.good = 0; }
+    else if (fpsMon.slowShare < 0.02 && resStep > 0 && ++fpsMon.good >= 5) { resStep--; resize(); fpsMon.good = 0; }
   }
   fpsMon.res = RES_STEPS[resStep];
-  fpsMon.t = 0; fpsMon.n = 0; fpsMon.slow = 0;
+  fpsMon.t = 0; fpsMon.n = 0;
 }
-// Taxa da tela (60/90/120 Hz): estimada nos primeiros quadros
-fpsMon.target = 1000 / 60;
-{ let k = 0, acc = 0, prev = 0; const probe = (t) => { if (prev) { acc += t - prev; k++; } prev = t; if (k < 30) requestAnimationFrame(probe); else { fpsMon.target = Math.max(1000 / 144, acc / k); fpsMon.hz = Math.round(1000 / fpsMon.target); } }; requestAnimationFrame(probe); }
 resize();
 game.player.reset(12 * 32, -2 * 32);          // fundo da tela inicial: o cenário do começo
 game.camera.snap(game.player);
@@ -131,11 +139,12 @@ const speed = Math.max(1, Number(params.get('speed')) || 1);
 let last = performance.now();
 let acc = 0;
 
-const perf = { frames: 0, sum: 0, max: 0 };
+const perf = { frames: 0, sum: 0, max: 0, wn: 0, wsum: 0, wmax: 0, wstep: 0, wdraw: 0, wslow: 0, hist: new Uint32Array(64) };
 window.__perf = perf;
 
 function frame(now) {
   const t0 = performance.now();
+  let ts = 0;
   const realDt = Math.min(0.1, (now - last) / 1000);
   last = now;
   watchFps(realDt * 1000);
@@ -146,6 +155,7 @@ function frame(now) {
     game.hitStop -= realDt;                    // micro-pausa de impacto
   } else if (game.isSimulating) {
     acc += realDt * speed;
+    ts = performance.now();
     let steps = 0;
     while (acc >= STEP && game.isSimulating && steps < 8 * speed) {
       game.step(STEP);
@@ -157,10 +167,16 @@ function frame(now) {
     acc = 0;
   }
 
+  const td = performance.now();
   renderer.draw(game.isSimulating ? acc / STEP : 1, realDt);
+  const te = performance.now();
   game.ui.update();
   const ms = (performance.now() - t0) / speed;
   perf.frames++; perf.sum += ms; perf.max = Math.max(perf.max, ms);
+  // janela do medidor: tempo de CPU por quadro, lógica, desenho e quadros que perderam a vez da tela
+  perf.wn++; perf.wsum += ms; perf.wmax = Math.max(perf.wmax, ms); perf.wdraw += te - td; perf.wstep += ts ? td - ts : 0;
+  if (realDt * 1000 > fpsMon.target * 1.5) perf.wslow++;
+  perf.hist[Math.min(63, Math.round(realDt * 1000))]++;
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

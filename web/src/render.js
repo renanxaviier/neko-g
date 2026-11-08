@@ -829,8 +829,12 @@ export class Renderer {
     this._band = null;
     this._drawBackground(ctx, this.bgBiome, this.bgFade < 1 ? this.bgFade : 1, W, H, left, top, s, camX, pulse, refTop);
     // Cenário vivo: animações de fundo (qualidade acompanha a resolução dinâmica)
-    const res = (window.__fps && window.__fps.res) || 2;
-    const q = res >= 1.7 ? 1 : res >= 1.45 ? 0.7 : 0.5;
+    // q também cai quando quadros começam a perder a vez da tela (antes de a resolução precisar baixar):
+    // efeitos que copiam a tela inteira (distorção, glitch, bloom) são os primeiros a sair.
+    const F = window.__fps, res = (F && F.res) || 2;
+    let q = res >= 1.7 ? 1 : res >= 1.45 ? 0.7 : 0.5;
+    if (F && F.slowShare > 0.04) q = Math.min(q, 0.6);
+    this.q = q;
     const band = this._band || { y: (-26 - (refTop + (top - refTop) * 0.65)) * s - 200 * s, h: 200 * s, offX: left * s * 0.65 };
     if (this.bgFade >= 1 || this.bgFade > 0.5) this.ambient.bg(ctx, BIOMES[this.bgBiome].id, W, H, s, g.time, band, realDt, q);
 

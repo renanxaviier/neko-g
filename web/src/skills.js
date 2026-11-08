@@ -335,7 +335,7 @@ export class Skills {
       }
     }
     g.fx.sfx('claw');
-    if (hits.length) g.hitStop = Math.max(g.hitStop, 0.025);
+    if (hits.length) g.addHitStop(0.018);
     if (evo) this._chain(hits, dmg * 0.6);
   }
 

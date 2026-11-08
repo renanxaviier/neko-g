@@ -289,7 +289,8 @@
   #sector-bar.boss #sector-tag { color: #ff3b5c; animation: blink .5s steps(2) infinite; }
   #sector-bar.portal #sector-tag { animation: blink .7s steps(2) infinite; }
   @keyframes blink { 50% { opacity: .35; } }
-  #fps-meter { position: absolute; left: 6px; bottom: calc(env(safe-area-inset-bottom) + 4px); z-index: 50; pointer-events: none; font: bold 10px monospace; color: #4dffa6; background: rgba(0,0,0,.55); padding: 2px 5px; border-radius: 4px; }
+  #fps-meter { position: absolute; left: 6px; top: calc(env(safe-area-inset-top) + 150px); z-index: 50; pointer-events: none; font: bold 10px/1.35 monospace; color: #4dffa6; background: rgba(0,0,0,.6); padding: 3px 6px; border-radius: 4px; white-space: pre; }
+  #fps-meter.warn { color: #ffd84d; } #fps-meter.bad { color: #ff5c8a; }
   .lv-actions { display: flex; gap: 10px; margin-top: 10px; pointer-events: auto; }
   .lvb { pointer-events: auto; padding: 8px 14px; border-radius: 10px; border: 1px solid #8c9bff; background: rgba(12,10,36,.85); color: #fff; font-size: 14px; font-weight: 700; }
   .lvb b { color: var(--cyan); margin-left: 4px; }
@@ -513,6 +514,7 @@
       <button class="opt" id="opt-sound">Som e música <b></b></button>
       <button class="opt" id="opt-shake">Tremor de tela <b></b></button>
       <button class="opt" id="opt-numbers">Números de dano <b></b></button>
+      <button class="opt" id="opt-perf">Mostrar desempenho <b></b></button>
     </div>
     <button id="btn-quit" class="btn ghost">Encerrar partida</button>
     <div class="sub" id="quit-hint">A Sucata coletada é guardada, como numa partida normal.</div>

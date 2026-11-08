@@ -71,6 +71,7 @@ export const JOURNEY = {
 // GDD 10.1 / 10.2
 export const RUN = {
   maxHP: 120,
+  hitStopGap: 0.45,           // pausa de impacto dos golpes comuns: no máximo uma a cada 0,45 s
   damageIFrames: 0.5,
   startInvuln: 3,
   reviveInvuln: 3,

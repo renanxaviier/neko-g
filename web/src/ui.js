@@ -70,6 +70,7 @@ export class UI {
     $('opt-sound').addEventListener('click', () => { this._setMuteIcon(game.audio.toggleMute()); this._refreshOpts(); });
     $('opt-shake').addEventListener('click', () => { game.setOption('shake', !game.settings.shake); this._refreshOpts(); });
     $('opt-numbers').addEventListener('click', () => { game.setOption('numbers', !game.settings.numbers); this._refreshOpts(); });
+    $('opt-perf').addEventListener('click', () => { game.setOption('perf', !game.settings.perf); this._refreshOpts(); });
     $('btn-exit-app').addEventListener('click', () => exitApp());
     $('btn-missions').addEventListener('click', () => this.showMissions(true));
     $('btn-missions-back').addEventListener('click', () => this.showMissions(false));
@@ -183,7 +184,7 @@ export class UI {
     $('dev-god').classList.toggle('on', !!g.devGod);
     $('dev-god2').innerHTML = `🛡 Invencível: <b>${g.devGod ? 'SIM' : 'NÃO'}</b>`;
     $('dev-fps').innerHTML = `📈 Mostrar FPS: <b>${g.showFps ? 'SIM' : 'NÃO'}</b>`;
-    $('fps-meter').classList.toggle('hidden', !(dev && g.showFps));
+    $('fps-meter').classList.toggle('hidden', !((dev && g.showFps) || g.settings.perf));
   }
 
   _renderChip() {
@@ -574,7 +575,8 @@ export class UI {
 
   _refreshOpts() {
     const g = this.game;
-    for (const [id, on] of [['opt-sound', !g.audio.muted], ['opt-shake', g.settings.shake], ['opt-numbers', g.settings.numbers]]) {
+    $('fps-meter').classList.toggle('hidden', !g.settings.perf && !g.showFps);
+    for (const [id, on] of [['opt-sound', !g.audio.muted], ['opt-shake', g.settings.shake], ['opt-numbers', g.settings.numbers], ['opt-perf', !!g.settings.perf]]) {
       const b = $(id); b.classList.toggle('on', on); b.querySelector('b').textContent = on ? 'LIGADO' : 'DESLIGADO';
     }
   }
@@ -785,6 +787,18 @@ export class UI {
       `<span class="chip${s.kind === 'passive' ? ' pas' : ''}${s.evolved ? ' evo' : ''}" style="--c:${s.color}">${s.icon}<small>${s.evolved ? 'EVO' : s.l}</small></span>`).join('');
   }
 
+  // Medidor de desempenho (opção da pausa): FPS, taxa da tela, tempo de lógica/desenho e piores quadros
+  _perfMeter() {
+    const f = window.__fps, P = window.__perf, g = this.game, el = $('fps-meter');
+    const n = Math.max(1, P.wn);
+    const txt = `${f.fps} fps / ${f.hz} Hz · res ${f.res || 2}x\n` +
+      `quadro ${(P.wsum / n).toFixed(1)} ms (pior ${P.wmax.toFixed(1)}) · lógica ${(P.wstep / n).toFixed(1)} · desenho ${(P.wdraw / n).toFixed(1)}\n` +
+      `lentos ${P.wslow}/${n} · inimigos ${g.enemies.count} · itens ${g.pickups.count} · efeitos ${g.fx.effects.filter((e) => e.life > 0).length}`;
+    el.textContent = txt;
+    el.classList.toggle('bad', f.fps < f.hz * 0.8); el.classList.toggle('warn', f.fps >= f.hz * 0.8 && P.wslow > n * 0.05);
+    P.wsum = P.wstep = P.wdraw = P.wmax = 0; P.wn = P.wslow = 0;
+  }
+
   _charXpLine(r) {
     if (!r.charXp) return '';
     return `<div class="lbl over-char">${r.charName} <b>+${r.charXp} XP</b> · NV ${r.charLvl.lvl}${r.charUp ? ` <b class="rec">▲ SUBIU DE NÍVEL! +${r.charUp} ponto${r.charUp > 1 ? 's' : ''} de talento</b>` : ''}</div>`;
@@ -898,10 +912,7 @@ export class UI {
       return;
     }
     this._updateControls();
-    if (g.showFps && window.__fps && (this._fpsT = (this._fpsT || 0) + 1) % 30 === 0) {
-      const f = window.__fps;
-      $('fps-meter').textContent = `${f.fps} fps · tela ${f.hz} Hz · res ${f.res || 2}x · inimigos ${g.enemies.count}`;
-    }
+    if ((g.showFps || g.settings.perf) && window.__fps && (this._fpsT = (this._fpsT || 0) + 1) % 30 === 0) this._perfMeter();
     if (g.sectorInfo) this._updateSector();
     const hp = Math.max(0, Math.ceil(g.hp));
     if (L.hp !== hp || L.maxHp !== g.maxHp) {

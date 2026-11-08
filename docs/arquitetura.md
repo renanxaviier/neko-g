@@ -37,9 +37,20 @@
 - **Medição:** `?debug=1` mostra FPS e contagem de entidades; `window.__perf` mede o custo por quadro.
 - Teste de estresse (07/11, Chrome desktop headless): 10 min de partida, 42 inimigos simultâneos, < 1 ms de trabalho por quadro, 4 MB de memória JS. **Falta validar num celular Android simples.**
 
+### 3b. Fluidez e 90/120 Hz (v0.17, 08/11/2026)
+- **Taxa da tela reestimada a cada 2 s** (telas LTPO como a do S25 Ultra mudam 60↔120 Hz sozinhas): período = percentil 20 dos intervalos; "lento" = quadro que perdeu a vez da tela. A resolução só muda quando a taxa ficou estável entre duas janelas.
+- **Efeitos de tela cheia** (distorção, glitch, bloom) saem primeiro: q cai para 0,6 quando mais de 4% dos quadros atrasam, antes de baixar a resolução.
+- **Pausa de impacto** dos golpes comuns limitada a uma a cada `RUN.hitStopGap` (0,45 s) e mais curta (18–30 ms). Antes cada acerto congelava 25 ms e parecia queda de quadros.
+- **App Android pede o modo de tela mais rápido** (`MainActivity` gerado por `android-app/scripts/prepare.mjs`: `preferredDisplayModeId` / `preferredRefreshRate`), senão o WebView fica em 60 Hz.
+- **Medidor no jogo:** Pausa → "Mostrar desempenho" (FPS/Hz, resolução, ms de CPU por quadro, lógica, desenho, quadros lentos, inimigos/itens/efeitos).
+- Medição de 08/11 no Chrome sem GPU: lógica + desenho ≈ 1 ms de CPU por quadro (4 ms com a CPU 4× mais lenta); o gargalo, quando houver, é GPU/composição.
+
 ## 4. Testes automáticos
 - Servidor local (`python3 -m http.server`) + Chrome headless (Playwright) em viewport de celular.
 - Parâmetros: `?seed=N` (cenário reproduzível), `?bot=1` (joga sozinho), `?speed=N` (acelera), `?god=1` (invencível), `?loop=1` (recomeça após o fim), `?debug=1`.
+
+### 4b. Envios ao GitHub (v0.17)
+Só enviar lotes fechados e testados (smoke test do Infinito e da Jornada + telas novas). A compilação do APK cancela a anterior se chegar um envio novo, usa cache do npm/Gradle e tenta de novo até 3 vezes as etapas de rede. `[skip apk]` na mensagem do commit pula a compilação (ex.: só documentação). O APK sai como `neko-g-apk-<número da execução>`.
 
 ## 5. Save
 - Web: JSON no `localStorage` (`neonpaws.save.v1`): Sucata total, recorde, partidas, níveis do Esconderijo.
