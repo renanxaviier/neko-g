@@ -1,0 +1,20 @@
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    b = p.chromium.launch(executable_path='/usr/bin/google-chrome')
+    pg = b.new_page(viewport={'width': 400, 'height': 820}, device_scale_factor=2, has_touch=True, is_mobile=True)
+    errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto('http://localhost:8765/?seed=3&god=1'); pg.wait_for_timeout(1800)
+    if pg.is_visible('#btn-checkin-back'): pg.click('#btn-checkin-back')
+    pg.evaluate("__game.meta.scrap = 5000; __game.meta.chars.push('guaxinim','pug')")
+    pg.click('#btn-char'); pg.wait_for_timeout(500)
+    for i in range(5): pg.click('#cs-weapon .wb'); pg.wait_for_timeout(150)
+    pg.screenshot(path='/tmp/w_cs.png')
+    print(pg.evaluate("JSON.stringify(__game.meta.weapons)"), pg.evaluate("__game.meta.scrap"))
+    for cid in ['gato','guaxinim','pug']:
+        pg.evaluate(f"__game.meta.weapons = {{garrasE:5, corteDados:5, martelo:5}}; __game.selectChar('{cid}')")
+        pg.evaluate("__start({mode:'endless'})"); pg.wait_for_timeout(9000)
+        pg.screenshot(path=f'/tmp/w_{cid}.png')
+        print(cid, pg.evaluate("[__game.skills.weapon && __game.skills.weapon.id, __game.kills]"))
+        pg.evaluate("__game.toTitle()"); pg.wait_for_timeout(500)
+    print(errs[:5])
+    b.close()

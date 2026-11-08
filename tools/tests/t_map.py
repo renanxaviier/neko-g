@@ -1,0 +1,16 @@
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    b = p.chromium.launch(executable_path='/usr/bin/google-chrome')
+    pg = b.new_page(viewport={'width': 400, 'height': 820}, device_scale_factor=2, has_touch=True, is_mobile=True)
+    errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto('http://localhost:8765/?seed=3'); pg.wait_for_timeout(1800)
+    if pg.is_visible('#btn-checkin-back'): pg.click('#btn-checkin-back')
+    pg.evaluate("__game.meta.jMax = 14; __game.meta.jStars = {0:7,1:3,2:1,3:7,4:5,5:7,6:3,7:7,8:1,9:7,10:7,11:3,12:7,13:1}")
+    pg.click('#btn-maps'); pg.wait_for_timeout(800)
+    pg.screenshot(path='/tmp/map1.png')
+    pg.evaluate("document.getElementById('jm-scroll').scrollTop = 99999"); pg.wait_for_timeout(300)
+    pg.click('.jm-node[data-m="1"]'); pg.wait_for_timeout(300)
+    pg.screenshot(path='/tmp/map2.png')
+    pg.click('#jm-play'); pg.wait_for_timeout(1500)
+    print(pg.evaluate("[__game.state, __game.mode, __game.map && __game.map.n, __game.mapReplay]"), errs)
+    b.close()

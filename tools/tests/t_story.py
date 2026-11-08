@@ -1,0 +1,32 @@
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    b = p.chromium.launch(executable_path='/usr/bin/google-chrome')
+    pg = b.new_page(viewport={'width': 412, 'height': 891}, has_touch=True, is_mobile=True, device_scale_factor=2)
+    errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
+    cdp = pg.context.new_cdp_session(pg); cdp.send('Network.setCacheDisabled', {'cacheDisabled': True})
+    pg.goto('http://localhost:8765/?seed=5'); pg.wait_for_timeout(1500)
+    pg.evaluate("__game.meta.tutDone=true; __game.meta.chars.push('tatu'); __game.meta.selected='tatu'; __start({mode:'journey', map:0})")
+    pg.wait_for_timeout(2500)
+    print('story', pg.evaluate("[__game.story, __game.introT, __game.runTime, document.getElementById('ov-story').className, document.getElementById('st-name').textContent]"))
+    pg.screenshot(path='/tmp/st_0.png')
+    for i in range(1,7):
+        pg.mouse.click(200, 600); pg.wait_for_timeout(250); pg.mouse.click(200, 600); pg.wait_for_timeout(900)
+        print(i, pg.evaluate("[__game.story, document.getElementById('st-name').textContent, document.getElementById('st-text').textContent.slice(0,60)]"))
+        if i in (1,2): pg.screenshot(path=f'/tmp/st_{i}.png')
+    pg.wait_for_timeout(1500)
+    print('after', pg.evaluate("[__game.story, +__game.introT.toFixed(2), __game.runTime.toFixed(1)]"))
+    # boss scene: jump to boss stage
+    pg.evaluate("__game.stage = 3; __game._doWarp()"); pg.wait_for_timeout(1200)
+    print('boss', pg.evaluate("[__game.story, __game.stageInfo.type, document.getElementById('st-name').textContent]"))
+    pg.screenshot(path='/tmp/st_boss.png')
+    pg.mouse.click(200,600); pg.wait_for_timeout(300); pg.mouse.click(200,600); pg.wait_for_timeout(1300)
+    pg.screenshot(path='/tmp/st_boss2.png')
+    pg.click('#st-skip'); pg.wait_for_timeout(500)
+    print('skip', pg.evaluate("[__game.story, document.getElementById('ov-story').className]"))
+    # outro: force win
+    pg.evaluate("__game._journeyWin()"); pg.wait_for_timeout(800)
+    print('outro', pg.evaluate("[__game.story, __game.state, document.getElementById('st-name').textContent]"))
+    pg.click('#st-skip'); pg.wait_for_timeout(800)
+    print('end', pg.evaluate("[__game.story, __game.state, JSON.stringify(__game.meta.story)]"))
+    print(errs[:3])
+    b.close()

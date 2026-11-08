@@ -1,0 +1,17 @@
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    b = p.chromium.launch(executable_path='/usr/bin/google-chrome')
+    pg = b.new_page(viewport={'width': 412, 'height': 891}, device_scale_factor=2, has_touch=True, is_mobile=True)
+    errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto('http://localhost:8765/?seed=3'); pg.wait_for_timeout(2000)
+    print('checkin aberto sozinho?', pg.is_visible('#ov-checkin'))
+    pg.evaluate("Object.assign(__game.meta, {scrap: 400, cxp: {gato: 900}, jMax: 2}); __game.ui._bell()")
+    pg.screenshot(path='/tmp/nt_title.png', clip={'x':0,'y':0,'width':412,'height':200})
+    pg.click('#btn-bell'); pg.wait_for_timeout(500)
+    pg.screenshot(path='/tmp/nt_open.png')
+    print([pg.inner_text(f'.nt >> nth={i} >> b') for i in range(pg.locator('.nt').count())])
+    pg.click('.nt >> nth=0'); pg.wait_for_timeout(500)
+    print('checkin aberto pelo aviso:', pg.is_visible('#ov-checkin'))
+    pg.click('#btn-checkin'); pg.wait_for_timeout(1500)
+    print('badge', pg.inner_text('#bell-n'), errs[:3])
+    b.close()

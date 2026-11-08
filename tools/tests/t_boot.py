@@ -1,0 +1,20 @@
+import time
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    b = p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--autoplay-policy=no-user-gesture-required'])
+    pg = b.new_page(viewport={'width': 412, 'height': 891}, device_scale_factor=2, has_touch=True, is_mobile=True)
+    errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
+    cdp = pg.context.new_cdp_session(pg); cdp.send('Network.setCacheDisabled', {'cacheDisabled': True})
+    t0=time.time()
+    pg.goto('http://localhost:8765/?intro=1')
+    pg.wait_for_timeout(700); pg.screenshot(path='/tmp/boot_0.png')
+    pg.wait_for_timeout(2300); pg.screenshot(path='/tmp/boot_1.png')
+    pg.wait_for_selector('#boot-go:not(.hidden)', timeout=15000)
+    print('pronto em %.1f s' % (time.time()-t0))
+    pg.screenshot(path='/tmp/boot_2.png')
+    print('folhas', pg.evaluate("Object.entries(__R.sheets).filter(([k,v])=>v.img).map(([k])=>k)"), 'near', pg.evaluate("Object.keys(__R.bioNear)"))
+    pg.mouse.click(200, 400); pg.wait_for_timeout(800)
+    print('abertura removida', pg.evaluate("!document.getElementById('ov-boot')"), 'musica tocando', pg.evaluate("!__game.audio.music.paused"))
+    pg.screenshot(path='/tmp/boot_3.png')
+    print(errs[:3])
+    b.close()

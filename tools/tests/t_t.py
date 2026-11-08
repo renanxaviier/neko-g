@@ -1,0 +1,22 @@
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    b = p.chromium.launch(executable_path='/usr/bin/google-chrome')
+    pg = b.new_page(viewport={'width': 400, 'height': 820}, device_scale_factor=2, has_touch=True, is_mobile=True)
+    errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto('http://localhost:8765/?seed=3&god=1'); pg.wait_for_timeout(1800)
+    if pg.is_visible('#btn-checkin-back'): pg.click('#btn-checkin-back')
+    pg.evaluate("__game.meta.cxp = {gato: 2600}")
+    pg.click('#btn-char'); pg.wait_for_timeout(600)
+    pg.screenshot(path='/tmp/t_cs.png')
+    pg.click('#cs-level button'); pg.wait_for_timeout(300)
+    for t in ['forca','forca','forca','couraca','couraca','couraca','couraca','couraca','escudo','forca']:
+        pg.click(f'.tl[data-t="{t}"]'); pg.wait_for_timeout(80)
+    pg.screenshot(path='/tmp/t_tree.png')
+    print(pg.evaluate("JSON.stringify(__game.meta.tal)"))
+    pg.click('#tl-back'); pg.wait_for_timeout(200)
+    pg.click('#cs-action'); pg.wait_for_timeout(1500)
+    print(pg.evaluate("[__game.maxHp, __game.damageMult.toFixed(2), __game.shield, __game.state]"))
+    pg.evaluate("__game.gameOver()"); pg.wait_for_timeout(700)
+    pg.screenshot(path='/tmp/t_over.png')
+    print(errs[:4])
+    b.close()
