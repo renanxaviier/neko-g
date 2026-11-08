@@ -50,6 +50,12 @@ export async function showRewarded() {
 
 export const nativeAds = () => !!admob;
 
+// Fecha o app (só no Android; no navegador não faz nada)
+export function exitApp() {
+  const app = plugin('App');
+  try { app?.exitApp(); } catch { /* sem plugin */ }
+}
+
 // Chamado uma vez na inicialização
 export async function initPlatform(handlers) {
   if (!isNative()) return;

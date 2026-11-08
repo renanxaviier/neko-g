@@ -5,6 +5,7 @@ import { RUN } from './config.js';
 import { UPGRADES, upgradeCost, MAX_UPGRADE } from './meta.js';
 import { CHARS, CHAR_ORDER } from './chars.js';
 import { errorText } from './cloud.js';
+import { exitApp } from './platform.js';
 import { iconSvg, ATTACK_LABEL, ATTACK_COLOR } from './controlIcons.js';
 import { CHECKIN_REWARDS, checkinState, ensureDaily, missionText, hasClaimable } from './missions.js';
 
@@ -49,6 +50,18 @@ export class UI {
     this.el.decline.addEventListener('click', () => game.declineRevive());
     this.el.mute.addEventListener('pointerdown', (e) => { e.stopPropagation(); this._setMuteIcon(game.audio.toggleMute()); });
     this.el.coins.addEventListener('click', () => game.reviveWithCoins());
+    // Pausa: botão no HUD, menu com opções e "Encerrar partida" (pede confirmação com um segundo toque)
+    $('btn-pause').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); game.pause(); });
+    $('btn-resume').addEventListener('click', () => game.resume());
+    $('btn-quit').addEventListener('click', () => {
+      const b = $('btn-quit');
+      if (!b.classList.contains('confirm')) { b.classList.add('confirm'); b.textContent = 'Toque de novo para encerrar'; return; }
+      game.quitRun();
+    });
+    $('opt-sound').addEventListener('click', () => { this._setMuteIcon(game.audio.toggleMute()); this._refreshOpts(); });
+    $('opt-shake').addEventListener('click', () => { game.setOption('shake', !game.settings.shake); this._refreshOpts(); });
+    $('opt-numbers').addEventListener('click', () => { game.setOption('numbers', !game.settings.numbers); this._refreshOpts(); });
+    $('btn-exit-app').addEventListener('click', () => exitApp());
     $('btn-missions').addEventListener('click', () => this.showMissions(true));
     $('btn-missions-back').addEventListener('click', () => this.showMissions(false));
     $('btn-checkin-open').addEventListener('click', () => { this.showMissions(false); this.showCheckin(true); });
@@ -387,6 +400,22 @@ export class UI {
   }
 
   // Botão "voltar" do Android: fecha painéis; na tela inicial sai do app; durante a partida não faz nada
+  _showPause() {
+    const g = this.game, q = $('btn-quit');
+    q.classList.remove('confirm'); q.textContent = 'Encerrar partida';
+    $('pause-time').textContent = `⏱ ${fmtTime(Math.floor(g.runTime))}`;
+    $('pause-sector').textContent = g.sectorInfo ? `S${g.sectorInfo.num} · ${g.sectorInfo.biome.name}` : '';
+    $('pause-kills').textContent = `☠ ${g.kills}`;
+    this._refreshOpts();
+  }
+
+  _refreshOpts() {
+    const g = this.game;
+    for (const [id, on] of [['opt-sound', !g.audio.muted], ['opt-shake', g.settings.shake], ['opt-numbers', g.settings.numbers]]) {
+      const b = $(id); b.classList.toggle('on', on); b.querySelector('b').textContent = on ? 'LIGADO' : 'DESLIGADO';
+    }
+  }
+
   back(exit) {
     const open = ['ov-checkin', 'ov-missions', 'ov-hideout', 'ov-account', 'ov-ranking', 'ov-dev'].find((id) => !$(id).classList.contains('hidden'));
     if (open === 'ov-dev') return this.showDev(false);
@@ -395,8 +424,11 @@ export class UI {
     if (open === 'ov-checkin') return this.showCheckin(false);
     if (open === 'ov-missions') return this.showMissions(false);
     if (open === 'ov-hideout') return this.showHideout(false);
-    if (this.game.state === GS.Title) exit();
-    else if (this.game.state === GS.GameOver) this.game.toTitle();
+    const st = this.game.state;
+    if (st === GS.Title) exit();
+    else if (st === GS.GameOver) this.game.toTitle();
+    else if (st === GS.Playing) this.game.pause();           // voltar do Android durante a partida = pausa
+    else if (st === GS.Paused) this.game.resume();
   }
 
   showSector(info) {
@@ -448,6 +480,8 @@ export class UI {
     e.levelup.classList.toggle('hidden', s !== GS.LevelUp);
     e.revive.classList.toggle('hidden', s !== GS.Revive);
     e.over.classList.toggle('hidden', s !== GS.GameOver);
+    $('ov-pause').classList.toggle('hidden', s !== GS.Paused);
+    if (s === GS.Paused) this._showPause();
     e.hud.classList.toggle('hidden', s === GS.Title);
     e.controls.classList.toggle('hidden', s !== GS.Playing);
     if (s === GS.Revive) {

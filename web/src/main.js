@@ -92,11 +92,18 @@ game.camera.snap(game.player);
 
 initPlatform({
   back: (exit) => game.ui.back(exit),
-  pause: () => audio.pauseMusic(),
+  pause: () => { game.pause(); audio.pauseMusic(); },     // app foi para o segundo plano: pausa a partida
+});
+
+// Teclado: Esc ou P pausa / continua
+window.addEventListener('keydown', (e) => {
+  if (e.code !== 'Escape' && e.code !== 'KeyP') return;
+  if (game.state === GS.Playing) game.pause();
+  else if (game.state === GS.Paused) game.resume();
 });
 
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) audio.pauseMusic();
+  if (document.hidden) { game.pause(); audio.pauseMusic(); }
   else if (game.state !== GS.Title) audio.resumeMusic();
 });
 

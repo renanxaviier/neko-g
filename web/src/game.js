@@ -18,7 +18,7 @@ import { CHARS, CHAR_ORDER } from './chars.js';
 import { nativeAds, showRewarded } from './platform.js';
 import { applyRun, claimCheckin, claimMission, ensureDaily } from './missions.js';
 
-export const GS = { Title: 'title', Start: 'start', Playing: 'playing', LevelUp: 'levelup', Revive: 'revive', GameOver: 'gameover' };
+export const GS = { Title: 'title', Start: 'start', Playing: 'playing', LevelUp: 'levelup', Revive: 'revive', GameOver: 'gameover', Paused: 'paused' };
 
 export class Game {
   constructor({ audio, input, params }) {
@@ -26,7 +26,7 @@ export class Game {
     this.input = input;
     this.params = params;
     this.cfg = RUN;
-    this.settings = { shake: true };
+    this.settings = loadSettings();                 // tremor de tela, números de dano (menu de pausa)
     this.god = params.has('god');           // só para testes automáticos
     this.ui = null;                         // definido pelo main
     this.state = GS.Title;
@@ -45,6 +45,7 @@ export class Game {
     this.skills = new Skills(this);
     this.waterFx = new WaterFx(); this.water = null;   // setor submerso (Cyber Deep)
     this.juice = new Juice();                          // números de dano, rastros, distorção, glitch (juice.js)
+    this.juice.numbersOn = this.settings.numbers;
     this.magnetMult = 1; this.cdMult = 1; this.damageMult = 1; this.enemyDamageMult = 1;
     this.maxHp = RUN.maxHP; this.hp = RUN.maxHP; this.maxHpBase = RUN.maxHP;
   }
@@ -101,7 +102,7 @@ export class Game {
     this.state = s;
     this.input.enabled = s === GS.Playing;
     if (s === GS.Playing) this.input.clear();           // o toque na carta/botão não vira pulo
-    this.audio.setDuck(s === GS.Revive ? 0.3 : s === GS.LevelUp ? 0.55 : s === GS.GameOver ? 0.4 : 1);
+    this.audio.setDuck(s === GS.Revive ? 0.3 : s === GS.LevelUp ? 0.55 : s === GS.GameOver ? 0.4 : s === GS.Paused ? 0.3 : 1);
     if (this.ui) this.ui.onState(s);
   }
 
@@ -560,6 +561,32 @@ export class Game {
 
   // ---------------- Fim ----------------
 
+  // ---------------- Pausa ----------------
+  // Só pausa jogando (no level up, revive e fim de jogo o tempo já está parado) e fora da transição de setor.
+  pause() {
+    if (this.state !== GS.Playing || this.isDying || this.warp) return false;
+    this.setState(GS.Paused);
+    return true;
+  }
+
+  resume() {
+    if (this.state !== GS.Paused) return;
+    this.iframes = Math.max(this.iframes, 0.6);      // meio segundo de folga para o dedo voltar aos botões
+    this.setState(GS.Playing);
+  }
+
+  // Encerrar pelo menu de pausa: conta como fim de partida (guarda a Sucata e o recorde)
+  quitRun() {
+    if (this.state !== GS.Paused) return;
+    this.gameOver();
+  }
+
+  setOption(key, on) {
+    this.settings[key] = on;
+    if (key === 'numbers') this.juice.numbersOn = on;
+    saveSettings(this.settings);
+  }
+
   gameOver() {
     const result = { time: this.runTime, kills: this.kills, scrap: this.scrap, level: this.level, best: false };
     this.meta.scrap += this.scrap;
@@ -587,6 +614,14 @@ export class Game {
 }
 
 // ---------------- Save (JSON) ----------------
+const SETTINGS_KEY = 'nekog.settings.v1';
+function loadSettings() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(SETTINGS_KEY)); } catch { s = null; }
+  return { shake: true, numbers: true, ...(s || {}) };
+}
+function saveSettings(s) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch { /* sem armazenamento */ } }
+
 // Na web: localStorage. No app Android: o mesmo JSON num arquivo do app (Capacitor Preferences/Filesystem).
 
 function loadSave() {

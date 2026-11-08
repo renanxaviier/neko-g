@@ -22,6 +22,15 @@
   #hp { position: relative; flex: 1; height: 18px; border: 2px solid #ff5c8a; border-radius: 6px; background: rgba(20,6,20,.7); overflow: hidden; box-shadow: 0 0 8px #ff5c8a88; }
   #hp-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff2b6a, #ff7ab0); transition: width .12s; }
   #hp-text { position: absolute; inset: 0; text-align: center; font-size: 12px; line-height: 14px; font-weight: bold; text-shadow: 0 1px 2px #000; }
+  #btn-pause { pointer-events: auto; width: 34px; height: 30px; border-radius: 8px; border: 2px solid var(--pink); background: rgba(10,10,30,.7); color: var(--pink); font-size: 12px; font-weight: bold; letter-spacing: -1px; }
+  #ov-pause .pause-stats { display: flex; gap: 14px; font-size: 14px; opacity: .85; }
+  #ov-pause .opts { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 300px; margin: 6px 0; }
+  .opt { pointer-events: auto; display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 10px; border: 1px solid #3a2f66; background: rgba(12,8,30,.85); color: #fff; font: inherit; font-size: 15px; }
+  .opt b { font-size: 13px; padding: 3px 10px; border-radius: 6px; background: #2a2244; color: #8a86a8; }
+  .opt.on b { background: var(--cyan); color: #04121a; }
+  #btn-quit.confirm { --c: #ff3b5c; color: #ff8aa0; }
+  #btn-exit-app { display: none; }
+  html.native #btn-exit-app { display: block; }
   #btn-mute { pointer-events: auto; width: 34px; height: 30px; border-radius: 8px; border: 2px solid var(--cyan); background: rgba(10,10,30,.7); color: var(--cyan); font-size: 16px; }
   #xp { position: relative; margin-top: 6px; height: 10px; border: 2px solid var(--cyan); border-radius: 6px; background: rgba(5,15,25,.7); overflow: hidden; box-shadow: 0 0 8px #5ef0ff66; }
   #xp-fill { height: 100%; width: 0; background: linear-gradient(90deg, #1fb5d6, #b9fbff); transition: width .1s; }
@@ -292,7 +301,7 @@
   <canvas id="game"></canvas>
 
   <div id="hud" class="hidden">
-    <div class="row"><div id="hp"><div id="hp-lag"></div><div id="hp-fill"></div><span id="hp-text"></span></div><button id="btn-mute">♪</button></div>
+    <div class="row"><div id="hp"><div id="hp-lag"></div><div id="hp-fill"></div><span id="hp-text"></span></div><button id="btn-pause" aria-label="Pausar">❚❚</button><button id="btn-mute">♪</button></div>
     <div id="xp"><div id="xp-fill"></div></div>
     <div id="sector-bar"><span id="sector-name">S1 · DISTRITO NEON</span><div class="track"><div id="sector-fill"></div></div><span id="sector-tag">CHEFÃO 2:30</span></div>
     <div class="row stats"><span id="lvl">Nv 1</span><span id="time">00:00</span><span id="kills">☠ 0</span><span id="scrap">⚙ 0</span></div>
@@ -343,6 +352,7 @@
         <button id="btn-account" class="btn" style="--c: var(--cyan)">👤 CONTA</button>
       </div>
       <button id="btn-dev" class="btn hidden" style="--c: #ff3b5c">🛠 PAINEL DEV</button>
+      <button id="btn-exit-app" class="btn ghost">Sair do jogo</button>
       <div class="title-stats" id="title-best"></div>
       <div class="keys">◀ ▶ mover · ATAQUE (segure) · PULO · DASH<br>Teclado: A/D · Espaço · J · Shift</div>
       <div class="sub">protótipo</div>
@@ -359,6 +369,19 @@
       <button id="btn-ban" class="lvb">⛔ Banir <b id="ban-n">1</b></button>
     </div>
     <div class="ban-hint hidden" id="ban-hint">Toque na carta que você não quer mais ver nesta partida</div>
+  </div>
+
+  <div id="ov-pause" class="ov dim hidden">
+    <h2>PAUSADO</h2>
+    <div class="pause-stats"><span id="pause-time"></span><span id="pause-sector"></span><span id="pause-kills"></span></div>
+    <button id="btn-resume" class="btn primary">▶ Continuar</button>
+    <div class="opts">
+      <button class="opt" id="opt-sound">Som e música <b></b></button>
+      <button class="opt" id="opt-shake">Tremor de tela <b></b></button>
+      <button class="opt" id="opt-numbers">Números de dano <b></b></button>
+    </div>
+    <button id="btn-quit" class="btn ghost">Encerrar partida</button>
+    <div class="sub" id="quit-hint">A Sucata coletada é guardada, como numa partida normal.</div>
   </div>
 
   <div id="ov-revive" class="ov dim hidden">

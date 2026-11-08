@@ -286,6 +286,8 @@ Desbloqueio com Cyber-Moedas na tela inicial (toque no cartão). Preços **[PROP
 ## 8. Telas
 Abertura → Esconderijo (hub: jogar, Laboratório, personagens, loja, missões, configurações) → Partida (HUD: HP, barra de XP/nível, tempo, pontuação, skills ativas) → Level Up (3 cartas) → Pausa → Protocolo de Backup → Fim de partida (pontuação, recorde, Sucata ganha, missões concluídas, jogar de novo).
 
+**Pausa (v0.13):** botão ❚❚ no HUD, tecla Esc/P, botão "voltar" do Android e o app indo para o segundo plano pausam a partida (não pausa durante a transição de setor). Menu: Continuar (volta com 0,6 s de invencibilidade) · Som e música · Tremor de tela · Números de dano (salvos no aparelho) · **Encerrar partida** (segundo toque confirma; conta como fim de partida: guarda Sucata e recorde). Na tela inicial do app Android há **Sair do jogo**; o "voltar" na tela inicial também fecha o app.
+
 ---
 
 ## 9. Questões em aberto (resumo)
