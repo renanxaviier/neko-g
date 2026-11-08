@@ -24,7 +24,26 @@
   #hp-text { position: absolute; inset: 0; text-align: center; font-size: 12px; line-height: 14px; font-weight: bold; text-shadow: 0 1px 2px #000; }
   #btn-pause { pointer-events: auto; width: 34px; height: 30px; border-radius: 8px; border: 2px solid var(--pink); background: rgba(10,10,30,.7); color: var(--pink); font-size: 12px; font-weight: bold; letter-spacing: -1px; }
   #ov-pause .pause-stats { display: flex; gap: 14px; font-size: 14px; opacity: .85; }
-  #ov-pause .opts { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 300px; margin: 6px 0; }
+  #ov-opts { justify-content: flex-start; overflow-y: auto; pointer-events: auto; padding-top: calc(env(safe-area-inset-top) + 18px); }
+  #ov-opts > * { flex-shrink: 0; }
+  #ov-opts .opts { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 320px; margin: 4px 0; }
+  #ov-feedback { justify-content: flex-start; overflow-y: auto; pointer-events: auto; padding-top: calc(env(safe-area-inset-top) + 18px); gap: 10px; }
+  #ov-feedback > * { flex-shrink: 0; }
+  .fb-stars { display: flex; gap: 6px; }
+  .fb-stars button { pointer-events: auto; font: inherit; font-size: 34px; line-height: 1; background: none; border: 0; color: #3a3352; padding: 0 2px; }
+  .fb-stars button.on { color: #ffd84d; text-shadow: 0 0 10px #ffd84d; }
+  .fb-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 340px; }
+  .fb-tags button { pointer-events: auto; font: inherit; font-size: 12px; padding: 6px 10px; border-radius: 14px; border: 1px solid #5a4f86; background: rgba(12,8,30,.85); color: #fff; }
+  .fb-tags button.on { background: var(--pink); border-color: var(--pink); }
+  #fb-text { pointer-events: auto; width: min(100%, 340px); font: inherit; font-size: 14px; color: #fff; background: rgba(12,8,30,.9); border: 1px solid #5a4f86; border-radius: 10px; padding: 10px; resize: none; }
+  .fb-diag { font: 10px/1.4 monospace; opacity: .55; max-width: 340px; white-space: pre-wrap; text-align: left; }
+  .ver { font-size: 10px; opacity: .45; letter-spacing: 1px; }
+  .tut { position: absolute; left: 50%; top: calc(env(safe-area-inset-top) + 150px); transform: translateX(-50%); z-index: 40; pointer-events: none; width: min(92%, 360px); padding: 10px 14px; border-radius: 12px; border: 2px solid var(--cyan); background: rgba(6,3,20,.88); box-shadow: 0 0 16px #5ef0ff66; text-align: center; font-size: 14px; font-weight: bold; line-height: 1.35; animation: tutIn .35s ease-out; }
+  .tut small { display: block; margin-top: 4px; font-size: 10px; opacity: .6; letter-spacing: 2px; }
+  @keyframes tutIn { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translateX(-50%); } }
+  .tbtn.tut-on::before { border-color: #fff; border-style: solid; animation: tutPulse 0.9s ease-in-out infinite; }
+  @keyframes tutPulse { 50% { transform: scale(1.18); opacity: .4; } }
+  .opt-h { font-size: 10px; letter-spacing: 3px; opacity: .6; text-align: left; margin: 6px 2px 0; }
   .opt { pointer-events: auto; display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 10px; border: 1px solid #3a2f66; background: rgba(12,8,30,.85); color: #fff; font: inherit; font-size: 15px; }
   .opt b { font-size: 13px; padding: 3px 10px; border-radius: 6px; background: #2a2244; color: #8a86a8; }
   .opt.on b { background: var(--cyan); color: #04121a; }
@@ -108,16 +127,28 @@
   @keyframes tspin { to { transform: rotate(360deg); } }
   @keyframes tburst { from { opacity: .9; transform: scale(1); } to { opacity: 0; transform: scale(1.45); } }
   @keyframes tready { from { opacity: 1; transform: scale(.95); border-width: 4px; } to { opacity: 0; transform: scale(1.3); } }
-  .dir { --c: #b9a6ff; border-radius: 22px; width: 72px; height: 78px; bottom: calc(env(safe-area-inset-bottom) + 34px); }
+  /* --cs = tamanho dos botões (opção), --co = opacidade. .auto = ataque automático (sem botão ATAQUE), .lefty = canhoto */
+  #controls { --cs: 1; --co: 1; }
+  #controls .tbtn { opacity: var(--co); }
+  .dir { --c: #b9a6ff; border-radius: 22px; width: calc(72px * var(--cs)); height: calc(78px * var(--cs)); bottom: calc(env(safe-area-inset-bottom) + 34px); }
   .dir .ico { width: 62%; height: 62%; }
   .dir::before { border-radius: 26px; animation: none; inset: -6px; }
   #btn-left { left: 10px; }
-  #btn-right { left: 92px; }
-  #btn-jump { --c: var(--pink); right: 12px; bottom: calc(env(safe-area-inset-bottom) + 30px); width: 86px; height: 86px; }
+  #btn-right { left: calc(18px + 74px * var(--cs)); }
+  #btn-jump { --c: var(--pink); right: 12px; bottom: calc(env(safe-area-inset-bottom) + 30px); width: calc(86px * var(--cs)); height: calc(86px * var(--cs)); }
   #btn-jump .ico { margin-top: -6px; }
-  #btn-attack { --c: var(--gold); right: 110px; bottom: calc(env(safe-area-inset-bottom) + 26px); width: 92px; height: 92px; }
-  #btn-dash { --c: var(--cyan); --alt: #ff9a3c; right: 66px; bottom: calc(env(safe-area-inset-bottom) + 128px); width: 66px; height: 66px; }
+  #btn-attack { --c: var(--gold); right: calc(24px + 86px * var(--cs)); bottom: calc(env(safe-area-inset-bottom) + 26px); width: calc(92px * var(--cs)); height: calc(92px * var(--cs)); }
+  #btn-dash { --c: var(--cyan); --alt: #ff9a3c; right: calc(12px + 54px * var(--cs)); bottom: calc(env(safe-area-inset-bottom) + 30px + 98px * var(--cs)); width: calc(66px * var(--cs)); height: calc(66px * var(--cs)); }
   #btn-dash small { font-size: 8px; }
+  #controls.auto #btn-attack { display: none; }
+  #controls.auto #btn-dash { right: calc(28px + 86px * var(--cs)); bottom: calc(env(safe-area-inset-bottom) + 30px); width: calc(78px * var(--cs)); height: calc(78px * var(--cs)); }
+  /* canhoto: direção na direita, ações na esquerda */
+  #controls.lefty #btn-left { left: auto; right: calc(18px + 74px * var(--cs)); }
+  #controls.lefty #btn-right { left: auto; right: 10px; }
+  #controls.lefty #btn-jump { right: auto; left: 12px; }
+  #controls.lefty #btn-attack { right: auto; left: calc(24px + 86px * var(--cs)); }
+  #controls.lefty #btn-dash { right: auto; left: calc(12px + 54px * var(--cs)); }
+  #controls.lefty.auto #btn-dash { left: calc(28px + 86px * var(--cs)); }
   @media (pointer: fine) { #controls .tbtn { display: none; } }
   @media (pointer: coarse) { .hint { display: none; } }
 
@@ -271,7 +302,8 @@
   .cs-weapon.bought { animation: bump .35s ease-out; }
   #cs-action { margin-top: auto; margin-bottom: 4px; position: sticky; bottom: 0; z-index: 2; box-shadow: 0 0 12px var(--pink), 0 8px 18px 8px #06031a; }
   .cs-strip { margin-top: 6px; }
-  #tl-toast, #cs-toast { font-size: 13px; color: #ffd0ff; padding: 6px 12px; border-radius: 10px; background: rgba(80,10,90,.7); }
+  #fb-toast { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); z-index: 60; }
+  #fb-toast, #tl-toast, #cs-toast { font-size: 13px; color: #ffd0ff; padding: 6px 12px; border-radius: 10px; background: rgba(80,10,90,.7); }
   #cs-action.nope { animation: nope .35s; }
   .over-stars { display: flex; gap: 14px; justify-content: center; margin: 4px 0; }
   .over-stars span { display: flex; flex-direction: column; align-items: center; opacity: 0; animation: starIn .45s cubic-bezier(.2,1.6,.4,1) forwards; }
@@ -487,10 +519,13 @@
       <div class="mini-row">
         <button id="btn-ranking" class="mini">🏆<small>Ranking</small></button>
         <button id="btn-account" class="mini">👤<small>Conta</small></button>
+        <button id="btn-title-opts" class="mini">⚙<small>Opções</small></button>
+        <button id="btn-feedback" class="mini" style="--c: #4dffa6">💬<small>Feedback</small></button>
         <button id="btn-dev" class="mini hidden" style="--c: #ff3b5c">🛠<small>Dev</small></button>
         <button id="btn-exit-app" class="mini">⏻<small>Sair</small></button>
       </div>
       <div class="title-stats" id="title-best"></div>
+      <div class="ver" id="ver"></div>
       <div class="keys no-touch">◀ ▶ mover · ATAQUE (segure) · PULO · DASH<br>Teclado: A/D · Espaço · J · Shift</div>
     </div>
   </div>
@@ -511,12 +546,7 @@
     <h2>PAUSADO</h2>
     <div class="pause-stats"><span id="pause-time"></span><span id="pause-sector"></span><span id="pause-kills"></span></div>
     <button id="btn-resume" class="btn primary">▶ Continuar</button>
-    <div class="opts">
-      <button class="opt" id="opt-sound">Som e música <b></b></button>
-      <button class="opt" id="opt-shake">Tremor de tela <b></b></button>
-      <button class="opt" id="opt-numbers">Números de dano <b></b></button>
-      <button class="opt" id="opt-perf">Mostrar desempenho <b></b></button>
-    </div>
+    <button id="btn-opts" class="btn" style="--c: var(--cyan)">⚙ Opções</button>
     <button id="btn-quit" class="btn ghost">Encerrar partida</button>
     <div class="sub" id="quit-hint">A Sucata coletada é guardada, como numa partida normal.</div>
   </div>
@@ -674,8 +704,44 @@
     <div id="over-rank"></div>
     <button id="btn-restart" class="btn primary">↻ Jogar de novo</button>
     <button id="btn-over-hideout" class="btn" style="--c: var(--gold)">⚙ Esconderijo</button>
-    <button id="btn-menu" class="btn ghost">Menu inicial</button>
+    <div class="row2"><button id="btn-menu" class="btn ghost">Menu inicial</button><button id="btn-over-fb" class="btn ghost" style="--c:#4dffa6">💬 Feedback</button></div>
   </div>
+
+  <div id="ov-opts" class="ov dark hidden">
+    <h2>OPÇÕES</h2>
+    <div class="opts">
+      <div class="opt-h">JOGO</div>
+      <button class="opt" id="opt-auto">Ataque automático <b></b></button>
+      <button class="opt" id="opt-sound">Som e música <b></b></button>
+      <button class="opt" id="opt-vib">Vibração <b></b></button>
+      <button class="opt" id="opt-shake">Tremor de tela <b></b></button>
+      <button class="opt" id="opt-numbers">Números de dano <b></b></button>
+      <div class="opt-h">BOTÕES</div>
+      <button class="opt" id="opt-size">Tamanho <b></b></button>
+      <button class="opt" id="opt-alpha">Transparência <b></b></button>
+      <button class="opt" id="opt-lefty">Modo canhoto <b></b></button>
+      <div class="opt-h">TESTE</div>
+      <button class="opt" id="opt-perf">Mostrar desempenho <b></b></button>
+      <button class="opt" id="opt-tut">Rever tutorial <b></b></button>
+    </div>
+    <button id="btn-opts-back" class="btn primary">◀ Voltar</button>
+  </div>
+
+  <div id="ov-feedback" class="ov dark hidden">
+    <h2>FEEDBACK</h2>
+    <div class="sub">Obrigado por testar! Conte o que achou: vai direto para o desenvolvedor.</div>
+    <div class="fb-stars" id="fb-stars"></div>
+    <div class="fb-tags" id="fb-tags"></div>
+    <textarea id="fb-text" rows="4" maxlength="800" placeholder="O que você gostou? O que travou, irritou ou ficou confuso?"></textarea>
+    <div class="fb-diag" id="fb-diag"></div>
+    <div class="row2"><button id="fb-wa" class="btn" style="--c:#4dffa6">WhatsApp</button><button id="fb-mail" class="btn" style="--c:var(--cyan)">E-mail</button></div>
+    <button id="fb-copy" class="btn ghost">📋 Copiar texto</button>
+    <button id="fb-back" class="btn primary">◀ Voltar</button>
+  </div>
+
+  <div id="fb-toast" class="hidden"></div>
+  <div id="tut" class="tut hidden"><span id="tut-text"></span><small id="tut-step"></small></div>
+
 </div>
 <script type="module" src="src/main.js"></script>
 </body>

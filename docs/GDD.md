@@ -335,6 +335,15 @@ Abertura → Esconderijo (hub: jogar, Laboratório, personagens, loja, missões,
 
 **Escolher personagem (v0.15):** pedestal grande animado (3 quadros, folha `menu`), setas ‹ › e deslizar o dedo para trocar, fileira com os 7 personagens (✓ em uso, 🔒 bloqueado, cinza = em breve). Mostra nome, traço, ataque básico e barras de Vida, Dano, Alcance, Velocidade e Ímã. Botão: SELECIONAR / ◆ preço · DESBLOQUEAR / ▶ JOGAR (se já está em uso, abre a Jornada). Coelho, Macaco, Tatu e Corvo aparecem como **EM BREVE** com o traço proposto **[PROPOSTA]** até serem integrados.
 
+**Pacote dos testadores (v0.18) [PROPOSTA]:**
+- **Ataque automático** (padrão ligado): o personagem ataca quando há inimigo ao alcance do golpe (ou das Shurikens); parado, vira para o inimigo. Desligável em Opções; ligado, o botão ATAQUE some e o DASH ocupa o lugar dele.
+- **Opções** (⚙ na tela inicial e na pausa): ataque automático, som, vibração, tremor, números de dano; botões com tamanho P/M/G/GG, transparência 100/75/50% e modo canhoto; medidor de desempenho; rever tutorial.
+- **Vibração** curta ao levar dano e ao derrotar chefe.
+- **Câmera mais aberta:** largura visível 380 → 410 px de mundo; personagem a ~61% da altura (antes 57%), mais visão acima.
+- **Tutorial** na 1ª partida: 6 dicas no topo (andar, pulo duplo, dash, ataque automático, G Batty, objetivo), cada uma some quando o jogador faz a ação.
+- **Feedback** (💬 na tela inicial e no fim de partida): nota de 1 a 5, assuntos, texto livre e diagnóstico automático (versão, aparelho, FPS, progresso), enviado pelo WhatsApp ou e-mail do testador.
+- Número da versão na tela inicial (`VERSION` em config.js).
+
 **Pausa (v0.13):** botão ❚❚ no HUD, tecla Esc/P, botão "voltar" do Android e o app indo para o segundo plano pausam a partida (não pausa durante a transição de setor). Menu: Continuar (volta com 0,6 s de invencibilidade) · Som e música · Tremor de tela · Números de dano (salvos no aparelho) · **Encerrar partida** (segundo toque confirma; conta como fim de partida: guarda Sucata e recorde). Na tela inicial do app Android há **Sair do jogo**; o "voltar" na tela inicial também fecha o app.
 
 ---

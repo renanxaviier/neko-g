@@ -193,6 +193,7 @@ export class Game {
     this.juice.glitch(amount >= 12 ? 0.2 : 0.12);
     this.hurtFlash = 0.15;
     this.hitStop = 0.05;
+    this.vibe(amount >= 12 ? 60 : 35);
     if (this.hp <= 0) {
       p.die();
       this.isDying = true;
@@ -467,6 +468,7 @@ export class Game {
     saveGame(this.meta);
     this.fx.bossDeath(e);
     this.hitStop = 0.18;
+    this.vibe(120);
     if (this.ui) this.ui.showBossDown(e.def, coins);
     this.sectorCleared = true;
     if (this.mode === 'journey') { this.stageDone = true; this.mapDoneT = 3.5; }   // tempo para recolher as recompensas
@@ -753,6 +755,14 @@ export class Game {
     this.gameOver();
   }
 
+  saveMeta() { saveGame(this.meta); }
+
+  // Vibração curta (Android); desligável nas opções
+  vibe(ms) {
+    if (!this.settings.vib || !navigator.vibrate) return;
+    try { navigator.vibrate(ms); } catch { /* sem vibração */ }
+  }
+
   setOption(key, on) {
     this.settings[key] = on;
     if (key === 'numbers') this.juice.numbersOn = on;
@@ -802,7 +812,7 @@ const SETTINGS_KEY = 'nekog.settings.v1';
 function loadSettings() {
   let s = null;
   try { s = JSON.parse(localStorage.getItem(SETTINGS_KEY)); } catch { s = null; }
-  return { shake: true, numbers: true, perf: false, ...(s || {}) };
+  return { shake: true, numbers: true, perf: false, auto: true, vib: true, size: 1, alpha: 1, lefty: false, ...(s || {}) };
 }
 function saveSettings(s) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch { /* sem armazenamento */ } }
 
@@ -816,7 +826,7 @@ function loadSave() {
 
 // Monta o save a partir de um objeto (local ou vindo da nuvem), completando campos que faltam.
 export function buildMeta(raw) {
-  const base = { v: 1, rev: 0, scrap: 0, cyberCoins: 0, bestTime: 0, runs: 0, chars: ['gato'], selected: 'gato', nick: '', owner: '', jMax: 0, jStars: {}, weapons: {}, cxp: {}, tal: {}, upgrades: { hp: 0, speed: 0, damage: 0, magnet: 0, luck: 0, crit: 0 } };
+  const base = { v: 1, rev: 0, scrap: 0, cyberCoins: 0, bestTime: 0, runs: 0, chars: ['gato'], selected: 'gato', nick: '', owner: '', jMax: 0, jStars: {}, weapons: {}, cxp: {}, tal: {}, tutDone: false, upgrades: { hp: 0, speed: 0, damage: 0, magnet: 0, luck: 0, crit: 0 } };
   const data = raw && typeof raw === 'object' ? { ...base, ...raw, upgrades: { ...base.upgrades, ...(raw.upgrades || {}) } } : { ...base, upgrades: { ...base.upgrades } };
   // Multiplicadores calculados (não vão para o arquivo de save)
   for (const k of ['hpMult', 'speedMult', 'dashMult', 'damageMult', 'magnetMult', 'rareChance', 'critChance', 'critMult']) {

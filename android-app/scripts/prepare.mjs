@@ -42,8 +42,11 @@ if (!xml.includes('android:screenOrientation')) {
 if (!xml.includes('com.google.android.gms.ads.APPLICATION_ID')) {
   xml = xml.replace(/<\/application>/, `    <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="${ADMOB_APP_ID}"/>\n    </application>`);
 }
+if (!xml.includes('android.permission.VIBRATE')) {             // vibração leve (opção do jogo)
+  xml = xml.replace(/<application/, '<uses-permission android:name="android.permission.VIBRATE" />\n    <application');
+}
 writeFileSync(manifest, xml);
-console.log('✔ AndroidManifest ajustado (retrato + AdMob)');
+console.log('✔ AndroidManifest ajustado (retrato + AdMob + vibração)');
 
 // 3a) Tela de 90/120 Hz: o WebView costuma ficar preso em 60 Hz se o app não pedir o modo mais rápido.
 // MainActivity pede o modo de maior taxa na resolução atual (S25 Ultra etc.) ao abrir e ao voltar ao app.

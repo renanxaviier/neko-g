@@ -1,15 +1,19 @@
 // Interface em HTML por cima do canvas: HUD, cartas de level up, Segunda Chance, Game Over e tela inicial.
 
 import { GS } from './game.js';
-import { RUN, JOURNEY, WEAPONS } from './config.js';
+import { RUN, JOURNEY, WEAPONS, VERSION } from './config.js';
 import { UPGRADES, upgradeCost, MAX_UPGRADE } from './meta.js';
 import { CHARS, ROSTER, charInfo } from './chars.js';
 import { errorText } from './cloud.js';
 import { exitApp } from './platform.js';
+const saveMeta = (g) => { if (g.saveMeta) g.saveMeta(); };
 import { journeyMap, goalText, goalIntro, starText, starCount, STAGE_TYPES } from './journey.js';
 import { BOSS_TYPES, BOSS_ORDER } from './boss.js';
 import { BRANCHES, TALENTS, charLevel, talentsOf, spentIn, pointsLeft, canLearn } from './talents.js';
 import { iconSvg, ATTACK_LABEL, ATTACK_COLOR } from './controlIcons.js';
+
+const SIZES = [[0.85, 'P'], [1, 'M'], [1.15, 'G'], [1.3, 'GG']];
+const ALPHAS = [[1, '100%'], [0.75, '75%'], [0.5, '50%']];
 import { CHECKIN_REWARDS, checkinState, ensureDaily, missionText, hasClaimable } from './missions.js';
 
 const $ = (id) => document.getElementById(id);
@@ -67,10 +71,29 @@ export class UI {
       if (!b.classList.contains('confirm')) { b.classList.add('confirm'); b.textContent = 'Toque de novo para encerrar'; return; }
       game.quitRun();
     });
-    $('opt-sound').addEventListener('click', () => { this._setMuteIcon(game.audio.toggleMute()); this._refreshOpts(); });
-    $('opt-shake').addEventListener('click', () => { game.setOption('shake', !game.settings.shake); this._refreshOpts(); });
-    $('opt-numbers').addEventListener('click', () => { game.setOption('numbers', !game.settings.numbers); this._refreshOpts(); });
-    $('opt-perf').addEventListener('click', () => { game.setOption('perf', !game.settings.perf); this._refreshOpts(); });
+    // Opções (pausa e tela inicial)
+    const opt = (id, fn) => $(id).addEventListener('click', () => { fn(); this._refreshOpts(); });
+    opt('opt-sound', () => this._setMuteIcon(game.audio.toggleMute()));
+    opt('opt-shake', () => game.setOption('shake', !game.settings.shake));
+    opt('opt-numbers', () => game.setOption('numbers', !game.settings.numbers));
+    opt('opt-perf', () => game.setOption('perf', !game.settings.perf));
+    opt('opt-auto', () => game.setOption('auto', !game.settings.auto));
+    opt('opt-vib', () => { game.setOption('vib', !game.settings.vib); game.vibe(40); });
+    opt('opt-lefty', () => game.setOption('lefty', !game.settings.lefty));
+    opt('opt-size', () => { const L = SIZES.map((x) => x[0]), i = L.indexOf(game.settings.size); game.setOption('size', L[(i + 1) % L.length]); });
+    opt('opt-alpha', () => { const L = ALPHAS.map((x) => x[0]), i = L.indexOf(game.settings.alpha); game.setOption('alpha', L[(i + 1) % L.length]); });
+    opt('opt-tut', () => { game.meta.tutDone = false; this._toast('O tutorial aparece na próxima partida'); });
+    $('btn-opts').addEventListener('click', () => this.showOpts(true));
+    $('btn-feedback').addEventListener('click', () => this.showFeedback(true));
+    $('btn-over-fb').addEventListener('click', () => this.showFeedback(true));
+    $('fb-back').addEventListener('click', () => this.showFeedback(false));
+    $('fb-wa').addEventListener('click', () => this._sendFeedback('wa'));
+    $('fb-mail').addEventListener('click', () => this._sendFeedback('mail'));
+    $('fb-copy').addEventListener('click', () => this._sendFeedback('copy'));
+    $('ver').textContent = `v${VERSION}`;
+    $('btn-title-opts').addEventListener('click', () => this.showOpts(true));
+    $('btn-opts-back').addEventListener('click', () => this.showOpts(false));
+    this._applyControls();
     $('btn-exit-app').addEventListener('click', () => exitApp());
     $('btn-missions').addEventListener('click', () => this.showMissions(true));
     $('btn-missions-back').addEventListener('click', () => this.showMissions(false));
@@ -503,7 +526,7 @@ export class UI {
   }
 
   _toast(msg) {
-    const t = !$('ov-talents').classList.contains('hidden') ? $('tl-toast') : this.el.chars.classList.contains('hidden') ? this.el.toast : $('cs-toast');
+    const t = !$('ov-feedback').classList.contains('hidden') || !$('ov-opts').classList.contains('hidden') ? $('fb-toast') : !$('ov-talents').classList.contains('hidden') ? $('tl-toast') : this.el.chars.classList.contains('hidden') ? this.el.toast : $('cs-toast');
     t.textContent = msg;
     t.classList.remove('hidden');
     clearTimeout(this._toastT);
@@ -573,17 +596,111 @@ export class UI {
     this._refreshOpts();
   }
 
+  // ---------------- Tutorial da 1ª partida ----------------
+  // Dicas curtas no topo, uma de cada vez; cada uma termina quando o jogador faz a ação (ou depois de um tempo).
+  _tutorial() {
+    const g = this.game, p = g.player, T = this._tut || (this._tut = { i: -1, t: 0, x0: 0 });
+    if (g.meta.tutDone) { if (T.i >= 0) this._tutEnd(); return; }
+    const touch = matchMedia('(pointer: coarse)').matches;
+    const STEPS = [
+      { txt: touch ? '◀ ▶  Ande com os botões da esquerda' : '◀ ▶  Ande com A/D ou as setas', btn: ['btn-left', 'btn-right'], done: () => Math.abs(p.x - T.x0) > 140 },
+      { txt: 'Toque PULO. No ar, toque de novo: pulo duplo!', btn: ['btn-jump'], done: () => p.airJumpT < 0.3 },
+      { txt: 'DASH: avanço rápido que atravessa inimigos sem levar dano', btn: ['btn-dash'], done: () => p.isDashing },
+      { txt: g.settings.auto ? 'O ataque é automático perto dos inimigos (dá para mudar em ⚙ Opções)' : 'Segure ATAQUE para golpear', btn: g.settings.auto ? [] : ['btn-attack'], done: () => T.t > 5 },
+      { txt: 'Pegue as G Batty ⚡ que os inimigos soltam para subir de nível e escolher skills', btn: [], done: () => g.level > 1 || T.t > 7 },
+      { txt: 'Cumpra o objetivo da fase (barra no topo) e entre no portal. Boa sorte!', btn: [], done: () => T.t > 5 },
+    ];
+    if (T.i < 0) { T.i = 0; T.t = 0; T.x0 = p.x; this._tutShow(STEPS); }
+    T.t += 1 / 60;
+    if (STEPS[T.i].done() && T.t > 1.2) {
+      T.i++; T.t = 0; T.x0 = p.x;
+      if (T.i >= STEPS.length) { g.meta.tutDone = true; saveMeta(g); this._tutEnd(); return; }
+      this.game.audio.sfx('select');
+      this._tutShow(STEPS);
+    }
+  }
+
+  _tutShow(STEPS) {
+    const T = this._tut, st = STEPS[T.i], el = $('tut');
+    $('tut-text').textContent = st.txt;
+    $('tut-step').textContent = `DICA ${T.i + 1}/${STEPS.length}`;
+    el.classList.remove('hidden'); el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+    document.querySelectorAll('.tbtn.tut-on').forEach((b) => b.classList.remove('tut-on'));
+    for (const id of st.btn) $(id).classList.add('tut-on');
+  }
+
+  _tutEnd() {
+    $('tut').classList.add('hidden');
+    document.querySelectorAll('.tbtn.tut-on').forEach((b) => b.classList.remove('tut-on'));
+    if (this._tut) this._tut.i = -1;
+  }
+
+  // ---------------- Feedback dos testadores ----------------
+  // Nota, assuntos e texto livre + diagnóstico (versão, aparelho, desempenho, progresso). Envia pelo WhatsApp
+  // ou e-mail do próprio testador (ele escolhe o contato); nada é enviado sozinho.
+  showFeedback(on) {
+    $('ov-feedback').classList.toggle('hidden', !on);
+    if (!on) return;
+    this._fb = this._fb || { stars: 0, tags: new Set() };
+    const st = $('fb-stars'), tg = $('fb-tags');
+    st.innerHTML = [1, 2, 3, 4, 5].map((n) => `<button data-n="${n}" class="${n <= this._fb.stars ? 'on' : ''}">★</button>`).join('');
+    st.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { this._fb.stars = Number(b.dataset.n); this.showFeedback(true); }));
+    const TAGS = ['Diversão', 'Controles', 'Dificuldade', 'Desempenho', 'Bug', 'Visual', 'Música', 'Menus'];
+    tg.innerHTML = TAGS.map((t) => `<button class="${this._fb.tags.has(t) ? 'on' : ''}">${t}</button>`).join('');
+    tg.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { const t = b.textContent; this._fb.tags.has(t) ? this._fb.tags.delete(t) : this._fb.tags.add(t); b.classList.toggle('on'); }));
+    $('fb-diag').textContent = this._diag();
+  }
+
+  _diag() {
+    const g = this.game, m = g.meta, f = window.__fps || {}, r = g.lastResult;
+    const ua = navigator.userAgent.match(/Android [\d.]+; ([^;)]+)/);
+    return `Neko G v${VERSION} · ${ua ? ua[1].trim() : navigator.platform} · tela ${screen.width}x${screen.height} @${(window.devicePixelRatio || 1).toFixed(2)}\n` +
+      `${f.fps || '?'} fps / ${f.hz || '?'} Hz · res ${f.res || 2}x · personagem ${g.char ? g.char.name : m.selected} · mapa ${(m.jMax || 0) + 1} · partidas ${m.runs}` +
+      (r ? `\núltima: ${r.mode === 'journey' ? `mapa ${r.map}${r.victory ? ' vencido' : ''}` : `setor ${r.sector}`} · ${Math.round(r.time)} s · ${r.kills} abates` : '');
+  }
+
+  _sendFeedback(how) {
+    const fb = this._fb || { stars: 0, tags: new Set() };
+    const txt = `💬 Feedback Neko G\nNota: ${'★'.repeat(fb.stars) || '-'}\nAssuntos: ${[...fb.tags].join(', ') || '-'}\n\n${$('fb-text').value.trim() || '(sem texto)'}\n\n— ${this._diag()}`;
+    if (how === 'copy') {
+      (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => this._toast('Texto copiado!'), () => this._toast('Não deu para copiar'));
+      return;
+    }
+    const url = how === 'wa' ? `https://wa.me/?text=${encodeURIComponent(txt)}` : `mailto:?subject=${encodeURIComponent(`Feedback Neko G v${VERSION}`)}&body=${encodeURIComponent(txt)}`;
+    if (how === 'wa') window.open(url, '_blank'); else location.href = url;
+  }
+
+  showOpts(on) {
+    $('ov-opts').classList.toggle('hidden', !on);
+    if (on) this._refreshOpts();
+  }
+
+  // Botões na tela: tamanho, transparência, canhoto e sem botão ATAQUE no ataque automático
+  _applyControls() {
+    const S = this.game.settings, c = this.el.controls;
+    c.style.setProperty('--cs', S.size); c.style.setProperty('--co', S.alpha);
+    c.classList.toggle('auto', !!S.auto); c.classList.toggle('lefty', !!S.lefty);
+  }
+
   _refreshOpts() {
-    const g = this.game;
-    $('fps-meter').classList.toggle('hidden', !g.settings.perf && !g.showFps);
-    for (const [id, on] of [['opt-sound', !g.audio.muted], ['opt-shake', g.settings.shake], ['opt-numbers', g.settings.numbers], ['opt-perf', !!g.settings.perf]]) {
+    const g = this.game, S = g.settings;
+    $('fps-meter').classList.toggle('hidden', !S.perf && !g.showFps);
+    for (const [id, on] of [['opt-sound', !g.audio.muted], ['opt-shake', S.shake], ['opt-numbers', S.numbers], ['opt-perf', !!S.perf],
+      ['opt-auto', !!S.auto], ['opt-vib', !!S.vib], ['opt-lefty', !!S.lefty]]) {
       const b = $(id); b.classList.toggle('on', on); b.querySelector('b').textContent = on ? 'LIGADO' : 'DESLIGADO';
     }
+    const lab = (L, v) => (L.find((x) => x[0] === v) || L[1] || L[0])[1];
+    $('opt-size').querySelector('b').textContent = lab(SIZES, S.size);
+    $('opt-alpha').querySelector('b').textContent = lab(ALPHAS, S.alpha);
+    $('opt-tut').querySelector('b').textContent = g.meta.tutDone ? 'VISTO' : 'NA PRÓXIMA';
+    this._applyControls();
   }
 
   back(exit) {
     const open = ['ov-checkin', 'ov-missions', 'ov-hideout', 'ov-account', 'ov-ranking', 'ov-dev'].find((id) => !$(id).classList.contains('hidden'));
     if (!$('ov-maps').classList.contains('hidden')) return this.showMaps(false);
+    if (!$('ov-opts').classList.contains('hidden')) return this.showOpts(false);
+    if (!$('ov-feedback').classList.contains('hidden')) return this.showFeedback(false);
     if (!$('ov-talents').classList.contains('hidden')) return this.showTalents(null);
     if (!this.el.chars.classList.contains('hidden')) return this.showChars(false);
     if (open === 'ov-dev') return this.showDev(false);
@@ -736,7 +853,8 @@ export class UI {
       e.coins.textContent = `◆ ${cost} Cyber-Moedas (você tem ${have})`;
       e.coins.disabled = have < cost;
     }
-    if (s !== GS.Title) { this.el.chars.classList.add('hidden'); $('ov-maps').classList.add('hidden'); $('ov-talents').classList.add('hidden'); }
+    if (s === GS.Title || s === GS.GameOver) this._tutEnd();
+    if (s !== GS.Title) { this.el.chars.classList.add('hidden'); $('ov-maps').classList.add('hidden'); $('ov-talents').classList.add('hidden'); if (s !== GS.Paused) $('ov-opts').classList.add('hidden'); }
     if (s === GS.GameOver) { clearTimeout(this._bannerT); clearTimeout(this._modT); e.banner.classList.add('hidden'); this._showOver(); }
     if (s === GS.Title) { this._renderChars(); this._showBest(); this.el.tapMusic.classList.toggle('hidden', !this.game.audio.music.paused); }
     if (s === GS.Playing || s === GS.Start) this._refreshSkills();
@@ -912,6 +1030,7 @@ export class UI {
       return;
     }
     this._updateControls();
+    if (g.state === GS.Playing) this._tutorial();
     if ((g.showFps || g.settings.perf) && window.__fps && (this._fpsT = (this._fpsT || 0) + 1) % 30 === 0) this._perfMeter();
     if (g.sectorInfo) this._updateSector();
     const hp = Math.max(0, Math.ceil(g.hp));

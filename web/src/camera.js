@@ -41,7 +41,7 @@ export class Camera {
     let focus = this.anchorY;
     if (p.cy < focus - 0.18 * vh) focus = p.cy + 0.18 * vh;     // subiu bastante: acompanha
     if (p.cy > focus + 0.10 * vh) focus = p.cy - 0.10 * vh;     // caiu bastante: acompanha
-    const y = focus - 0.07 * vh;                                // jogador ~57% da altura da tela
+    const y = focus - 0.11 * vh;                                // jogador ~61% da altura da tela (mais visão acima)
     return Math.max((this.minTop ?? MIN_TOP) + vh / 2, Math.min(0, y));   // minTop: na água, não sobe muito além da superfície
   }
 

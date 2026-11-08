@@ -140,7 +140,7 @@ export class Skills {
     if (p.isDead) return;
 
     // Garras e Shurikens: disparam quando o jogador aperta/segura ATAQUE, cada um no seu tempo de recarga
-    const wants = g.input.wantsAttack();
+    const wants = g.input.wantsAttack() || (g.settings.auto && this._autoAttack(p));
     let fired = false;
     for (const [id, lvl] of this.actives) {
       if (id === 'drones' || id === 'rastro' || AUTO.includes(id)) continue;
@@ -192,6 +192,23 @@ export class Skills {
     this._rastro(dt);
     this._stepShots(dt);
     this._stepFire(dt);
+  }
+
+  // Ataque automático (opção, ligado por padrão): ataca quando há inimigo ao alcance; parado, vira para ele
+  _autoAttack(p) {
+    const g = this.game, lvl = this.actives.get('garras') || 1;
+    const reach = (stats.garras(lvl, false).range * g.char.melee.range * g.areaMult) + 18 + (this.actives.has('shuriken') ? 120 : 0);
+    const near = g.enemies.grid.query(p.cx - reach, p.cy - 70, p.cx + reach, p.cy + 50, this._near);
+    let best = null, bd = 1e9;
+    for (let i = 0; i < near.length; i++) {
+      const e = near[i];
+      if (!e.active || (e.def.prop && Math.abs(e.cx - p.cx) > 70)) continue;
+      const d = Math.abs(e.cx - p.cx);
+      if (d < bd) { bd = d; best = e; }
+    }
+    if (!best) return false;
+    if (!g.input.moveDir && best.cx !== p.cx) p.facing = best.cx > p.cx ? 1 : -1;
+    return true;
   }
 
   // ---------------- Armas exclusivas (v0.16) ----------------
