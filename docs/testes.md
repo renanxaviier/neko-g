@@ -12,3 +12,10 @@
 
 ## Voltar para a versão anterior
 Antes do pacote dos testadores: ramo `versao-0.17.2` no GitHub e versão `1794146563-4738` do protótipo (dev).
+
+## Atualização pelo app (Firebase App Distribution) — 08/11/2026
+- Cada build do `main` no GitHub Actions é enviado automaticamente ao grupo **testadores** do Firebase App Distribution (projeto neko-g), com as notas do commit.
+- Para entrar no teste: o produtor adiciona o e-mail em Firebase → App Distribution → Testadores e grupos → **testadores**. O testador recebe um convite por e-mail, aceita e instala o APK (pelo navegador ou pelo app "App Tester").
+- Depois de instalado, ao abrir o jogo aparece o pedido para **ativar alertas de versão nova** (login Google do testador, uma vez só). A partir daí, quando sair build novo, o jogo mostra "Nova versão → Atualizar"; um toque baixa e o Android pede para instalar.
+- Só funciona para e-mails que estão no grupo. A versão da loja (`CHANNEL=store`) não tem esse aviso: lá quem atualiza é a Play Store.
+- CI sem chave secreta: o GitHub se autentica no Google pela Federação de identidade (pool `github`, provedor `neko-g-actions`, só o repositório renanxaviier/neko-g) e usa a conta de serviço `neko-g-ci` (papel: Administrador do App Distribution).
