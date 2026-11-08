@@ -112,14 +112,38 @@ jobs:
         with:
           workload_identity_provider: projects/917194353955/locations/global/workloadIdentityPools/github/providers/neko-g-actions
           service_account: neko-g-ci@neko-g.iam.gserviceaccount.com
+          token_format: access_token
 
+      # API REST do App Distribution (o firebase-tools não aceita a credencial sem chave): envia, põe as notas e distribui
       - name: Enviar aos testadores (App Distribution)
         if: github.ref == 'refs/heads/main' && steps.gauth.outcome == 'success'
         continue-on-error: true
+        env:
+          TOKEN: ${{ steps.gauth.outputs.access_token }}
+          APP: projects/917194353955/apps/1:917194353955:android:16bec733171a0475d6f096
         run: |
+          set -e
+          API=https://firebaseappdistribution.googleapis.com
           APK=$(ls android-app/android/app/build/outputs/apk/debug/*.apk | head -1)
           VER=$(grep -oE "VERSION = '[^']*'" web/src/config.js | cut -d"'" -f2)
-          printf 'v%s (build %s)\n%s\n' "$VER" "${{ github.run_number }}" "$(git log -1 --pretty=%B | head -c 2500)" > /tmp/notes.txt
-          npx --yes firebase-tools@15 appdistribution:distribute "$APK" \
-            --app 1:917194353955:android:16bec733171a0475d6f096 \
-            --groups testadores --release-notes-file /tmp/notes.txt
+          NOTES=$(printf 'v%s (build %s)\n%s' "$VER" "${{ github.run_number }}" "$(git log -1 --pretty=%B | head -c 2500)")
+          OP=$(curl -sS --fail-with-body -X POST "$API/upload/v1/$APP/releases:upload" \
+            -H "Authorization: Bearer $TOKEN" -H "X-Goog-Upload-Protocol: raw" \
+            -H "X-Goog-Upload-File-Name: neko-g-${{ github.run_number }}.apk" \
+            -H "Content-Type: application/octet-stream" --data-binary @"$APK" | jq -r .name)
+          echo "operação: $OP"
+          REL=""
+          for i in $(seq 1 30); do
+            R=$(curl -sS --fail-with-body "$API/v1/$OP" -H "Authorization: Bearer $TOKEN")
+            if [ "$(echo "$R" | jq -r '.done // false')" = "true" ]; then
+              echo "$R" | jq -c '{result: .response.result, error: .error}'
+              REL=$(echo "$R" | jq -r '.response.release.name // empty'); break
+            fi
+            sleep 5
+          done
+          [ -n "$REL" ] || { echo "::error::envio ao App Distribution não terminou"; exit 1; }
+          curl -sS --fail-with-body -X PATCH "$API/v1/$REL?updateMask=release_notes.text" -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" -d "$(jq -n --arg t "$NOTES" '{releaseNotes: {text: $t}}')" > /dev/null
+          curl -sS --fail-with-body -X POST "$API/v1/$REL:distribute" -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" -d '{"groupAliases": ["testadores"]}' > /dev/null
+          echo "✔ distribuído ao grupo testadores: $REL"
