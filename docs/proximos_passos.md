@@ -22,7 +22,7 @@
   - Ideia do produtor: **armas por personagem**, como upgrade de uso exclusivo, escolhidas pela característica de cada um. Proposta inicial [PROPOSTA]: Gato → garras energizadas; Guaxinim → corte de dados / blaster glitch; Pug → martelo de impacto; Coelho → lâmina de energia (meia-lua); Macaco → laser, rajada ou plasma; Tatu → ondas de choque / arcos elétricos.
 
 - `assets/concept/menu_personagens.jpg`: **tela de escolher personagem**: 3 quadros de "parado" sobre um pedestal neon para Gato, Guaxinim, Pug, Coelho, Macaco, Tatu e **Corvo (personagem novo)**.
-  - Observações: abaixo do Pug há uma linha solta de ondas de choque e uma linha extra do Coelho (pedestais de cores trocadas) — ignorar. O **Coelho do menu é cinza/branco**, mas o da folha de jogo é **marrom**: confirmar com o produtor qual vale. O **Corvo** só tem os quadros do menu; para ser jogável faltam as folhas de jogo (parado, correr/voar, pulo, dash, ataque, dano, morte).
+  - Observações: abaixo do Pug há uma linha solta de ondas de choque e uma linha extra do Coelho (pedestais de cores trocadas) — ignorar. O Coelho do menu original era cinza; **corrigido** pelo produtor: usar `assets/concept/menu_coelho.jpg` (marrom, igual à folha de jogo). O **Corvo** só tem os quadros do menu; para ser jogável faltam as folhas de jogo (parado, correr/voar, pulo, dash, ataque, dano, morte).
 
 ## Combinado para a próxima sessão
 1. **Mais regras e objetivos** na Jornada (novos tipos de fase, fase elite, eventos).
