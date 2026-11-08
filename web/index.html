@@ -270,7 +270,7 @@
   .cs-weapon.bought { animation: bump .35s ease-out; }
   #cs-action { margin-top: auto; margin-bottom: 4px; }
   .cs-strip { margin-top: 6px; }
-  #cs-toast { font-size: 13px; color: #ffd0ff; padding: 6px 12px; border-radius: 10px; background: rgba(80,10,90,.7); }
+  #tl-toast, #cs-toast { font-size: 13px; color: #ffd0ff; padding: 6px 12px; border-radius: 10px; background: rgba(80,10,90,.7); }
   #cs-action.nope { animation: nope .35s; }
   .over-stars { display: flex; gap: 14px; justify-content: center; margin: 4px 0; }
   .over-stars span { display: flex; flex-direction: column; align-items: center; opacity: 0; animation: starIn .45s cubic-bezier(.2,1.6,.4,1) forwards; }
@@ -340,6 +340,34 @@
   .rk-me { font-size: 13px; min-height: 18px; }
   #over-rank { font-size: 13px; color: #4dffa6; min-height: 16px; }
   #btn-journey small { display: block; font-size: 12px; font-weight: normal; opacity: .85; letter-spacing: 1px; margin-top: 2px; }
+  .chip.wpn { border-color: var(--gold) !important; box-shadow: 0 0 8px var(--gold); }
+  /* Nível do personagem e talentos (v0.16) */
+  .cs-level { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 4px; pointer-events: auto; }
+  .cs-level .lv { font-size: 13px; font-weight: 900; color: var(--cc); text-shadow: 0 0 8px var(--cc); white-space: nowrap; }
+  .cs-level .xb { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .cs-level .xb i { display: block; height: 100%; width: var(--w); background: linear-gradient(90deg, var(--cc), #fff); }
+  .cs-level button { pointer-events: auto; font: inherit; font-size: 11px; font-weight: bold; padding: 5px 9px; border-radius: 8px; border: 1px solid var(--cc); background: rgba(10,6,26,.8); color: #fff; white-space: nowrap; }
+  .cs-level button.has { background: var(--cc); color: #0a0618; animation: pulseBtn 1.6s ease-in-out infinite; }
+  #ov-talents { justify-content: flex-start; gap: 8px; padding: calc(env(safe-area-inset-top) + 14px) 10px calc(env(safe-area-inset-bottom) + 14px); background: #06031a; }
+  .tl-pts { font-size: 13px; font-weight: bold; color: #0a0618; background: #ffd84d; padding: 6px 10px; border-radius: 10px; }
+  .tl-sub { font-size: 11px; opacity: .75; max-width: 400px; }
+  .tl-tree { display: flex; gap: 6px; width: 100%; max-width: 440px; flex: 1; min-height: 0; overflow-y: auto; pointer-events: auto; }
+  .tl-col { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .tl-col h4 { margin: 0; font-size: 11px; letter-spacing: 2px; color: var(--bc); text-shadow: 0 0 8px var(--bc); text-align: center; }
+  .tl-col h4 small { display: block; font-size: 9px; color: #fff; opacity: .6; letter-spacing: 1px; }
+  .tl { pointer-events: auto; font: inherit; color: #fff; position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 7px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--bc) 45%, transparent); background: rgba(14,10,32,.92); text-align: center; }
+  .tl .ic { font-size: 20px; line-height: 1; color: var(--bc); text-shadow: 0 0 8px var(--bc); }
+  .tl b { font-size: 11px; }
+  .tl i { font-style: normal; font-size: 9px; opacity: .75; line-height: 1.2; min-height: 22px; }
+  .tl .rk { display: flex; gap: 2px; }
+  .tl .rk span { width: 9px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.15); }
+  .tl .rk span.on { background: var(--bc); box-shadow: 0 0 5px var(--bc); }
+  .tl.can { border-color: var(--bc); box-shadow: 0 0 10px color-mix(in srgb, var(--bc) 55%, transparent); }
+  .tl.lock { opacity: .4; }
+  .tl.lock::after { content: attr(data-req); position: absolute; top: 3px; right: 5px; font-size: 9px; }
+  .tl.full { background: color-mix(in srgb, var(--bc) 16%, rgba(14,10,32,.92)); }
+  .tl.pop { animation: bump .35s ease-out; }
+  .over-char { font-size: 12px; } .over-char b { color: var(--gold); }
   /* Mapa da Jornada (v0.16): caminho subindo, um nó por mapa */
   #ov-maps { justify-content: flex-start; gap: 6px; padding: calc(env(safe-area-inset-top) + 14px) 0 calc(env(safe-area-inset-bottom) + 12px);
     background: radial-gradient(ellipse at 50% 100%, rgba(80,20,110,.55), rgba(6,3,18,.97) 60%), repeating-linear-gradient(0deg, rgba(94,240,255,.05) 0 1px, transparent 1px 40px), repeating-linear-gradient(90deg, rgba(94,240,255,.05) 0 1px, transparent 1px 40px), #06031a; }
@@ -462,7 +490,6 @@
       </div>
       <div class="title-stats" id="title-best"></div>
       <div class="keys no-touch">◀ ▶ mover · ATAQUE (segure) · PULO · DASH<br>Teclado: A/D · Espaço · J · Shift</div>
-      <div class="sub">protótipo</div>
     </div>
   </div>
 
@@ -503,7 +530,7 @@
 
   <div id="ov-hideout" class="ov dark hidden">
     <h2>ESCONDERIJO</h2>
-    <div class="sub">Upgrades permanentes · valem para todos os personagens</div>
+    <div class="sub">Upgrades permanentes · valem para todos os personagens<br>Armas e talentos de cada personagem ficam em 🐾 PERSONAGEM</div>
     <div id="wallet"><canvas id="coin-ic" width="40" height="40"></canvas><b id="wallet-scrap">0</b><span>Sucata</span></div>
     <div id="upgrades"></div>
     <button id="btn-hideout-back" class="btn primary">◀ Voltar</button>
@@ -536,12 +563,25 @@
       <div class="cs-name" id="cs-name">GATO</div>
       <div class="cs-trait" id="cs-trait"></div>
       <div class="cs-melee" id="cs-melee"></div>
+      <div class="cs-level hidden" id="cs-level"></div>
       <div class="cs-stats" id="cs-stats"></div>
       <div class="cs-weapon hidden" id="cs-weapon"></div>
     </div>
     <div class="cs-strip" id="cs-strip"></div>
     <div id="cs-toast" class="hidden"></div>
     <button id="cs-action" class="btn primary">SELECIONAR</button>
+  </div>
+
+  <div id="ov-talents" class="ov hidden">
+    <div class="jm-head">
+      <button id="tl-back" class="cs-x">◀</button>
+      <h2 id="tl-title">TALENTOS</h2>
+      <span class="tl-pts" id="tl-pts"></span>
+    </div>
+    <div class="tl-sub" id="tl-sub"></div>
+    <div class="tl-tree" id="tl-tree"></div>
+    <div id="tl-toast" class="hidden"></div>
+    <button id="tl-reset" class="btn ghost">↺ Redistribuir pontos (grátis)</button>
   </div>
 
   <div id="ov-maps" class="ov hidden">

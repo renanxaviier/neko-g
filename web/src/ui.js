@@ -8,6 +8,7 @@ import { errorText } from './cloud.js';
 import { exitApp } from './platform.js';
 import { journeyMap, goalText, goalIntro, starText, starCount, STAGE_TYPES } from './journey.js';
 import { BOSS_TYPES, BOSS_ORDER } from './boss.js';
+import { BRANCHES, TALENTS, charLevel, talentsOf, spentIn, pointsLeft, canLearn } from './talents.js';
 import { iconSvg, ATTACK_LABEL, ATTACK_COLOR } from './controlIcons.js';
 import { CHECKIN_REWARDS, checkinState, ensureDaily, missionText, hasClaimable } from './missions.js';
 
@@ -40,6 +41,8 @@ export class UI {
     $('btn-journey').addEventListener('click', () => this.h.start({ mode: 'journey', map: game.meta.jMax || 0 }));
     $('btn-maps').addEventListener('click', () => this.showMaps(true));
     this._initCharSelect();
+    $('tl-back').addEventListener('click', () => this.showTalents(null));
+    $('tl-reset').addEventListener('click', () => { if (this.game.resetTalents(this._tlId)) this._renderTalents(); });
     $('btn-maps-back').addEventListener('click', () => this.showMaps(false));
     this.el.restart.addEventListener('click', () => this.h.start((game.lastResult && game.lastResult.next) || { mode: 'endless' }));
     $('btn-menu').addEventListener('click', () => game.toTitle());
@@ -402,6 +405,7 @@ export class UI {
       $('cs-stats').innerHTML = rows.map(([k, v]) => `<span>${k}</span><div class="bar"><i style="--w:${Math.round(Math.min(1, v) * 100)}%"></i></div>`).join('');
     }
     this._csWeapon(ch, st);
+    this._csLevel(ch, st);
     const a = $('cs-action');
     a.disabled = st === 'soon';
     a.classList.toggle('pulse', st === 'own');
@@ -415,6 +419,48 @@ export class UI {
       const info = $('cs-info');
       info.classList.remove('pop'); void info.offsetWidth; info.classList.add('pop');
     }
+  }
+
+  // Nível permanente do personagem + botão da árvore de talentos
+  _csLevel(ch, st) {
+    const box = $('cs-level');
+    box.classList.toggle('hidden', !!ch.soon);
+    if (ch.soon) return;
+    const m = this.game.meta, L = charLevel((m.cxp || {})[ch.id]), pts = pointsLeft(m, ch.id);
+    const w = L.need ? Math.round((100 * L.into) / L.need) : 100;
+    box.innerHTML = `<span class="lv">NV ${L.lvl}</span><span class="xb"><i style="--w:${w}%"></i></span>`;
+    const b = document.createElement('button');
+    b.className = pts > 0 && st !== 'lock' ? 'has' : '';
+    b.textContent = st === 'lock' ? '★ TALENTOS 🔒' : pts > 0 ? `★ TALENTOS (${pts})` : '★ TALENTOS';
+    b.disabled = st === 'lock';
+    b.addEventListener('click', () => this.showTalents(ch.id));
+    box.appendChild(b);
+  }
+
+  showTalents(id) {
+    const ov = $('ov-talents');
+    if (!id) { ov.classList.add('hidden'); this._csRender(0); return; }
+    this._tlId = id;
+    ov.classList.remove('hidden');
+    this._renderTalents();
+  }
+
+  _renderTalents(pop) {
+    const g = this.game, m = g.meta, id = this._tlId, ch = CHARS[id], tal = talentsOf(m, id), L = charLevel((m.cxp || {})[id]);
+    $('tl-title').textContent = `TALENTOS · ${ch.name}`;
+    $('tl-pts').textContent = `${pointsLeft(m, id)} ponto(s)`;
+    $('tl-sub').textContent = `Nível ${L.lvl}${L.need ? ` · ${L.into}/${L.need} XP para o próximo` : ' (máximo)'}. Cada nível dá 1 ponto. Toque num talento para gastar. O XP vem de toda partida com este personagem.`;
+    $('tl-tree').innerHTML = BRANCHES.map((B) => `<div class="tl-col" style="--bc:${B.color}"><h4>${B.name}<small>${spentIn(tal, B.id)} pontos</small></h4>${
+      TALENTS.filter((t) => t.b === B.id).map((t) => {
+        const r = tal[t.id] || 0, locked = t.req && spentIn(tal, t.b) < t.req;
+        const cls = (r >= t.max ? ' full' : canLearn(m, id, t.id) ? ' can' : '') + (locked ? ' lock' : '') + (pop === t.id ? ' pop' : '');
+        return `<button class="tl${cls}" data-t="${t.id}" ${locked ? `data-req="🔒${t.req}"` : ''}><span class="ic">${t.icon}</span><b>${t.name}</b><i>${t.desc(Math.max(1, r))}</i><span class="rk">${Array.from({ length: t.max }, (_, k) => `<span class="${k < r ? 'on' : ''}"></span>`).join('')}</span></button>`;
+      }).join('')}</div>`).join('');
+    $('tl-tree').querySelectorAll('.tl').forEach((b) => b.addEventListener('click', () => {
+      const tid = b.dataset.t;
+      if (!g.learnTalent(id, tid)) { const t = TALENTS.find((x) => x.id === tid); this._toast(t.req && spentIn(tal, t.b) < t.req ? `Gaste ${t.req} pontos neste ramo para liberar` : pointsLeft(m, id) <= 0 ? 'Sem pontos: jogue para subir de nível' : 'Talento no máximo'); return; }
+      this._renderTalents(tid);
+    }));
   }
 
   // Arma exclusiva do personagem: nível 0–5, comprada com Sucata (só depois de ter o personagem)
@@ -456,7 +502,7 @@ export class UI {
   }
 
   _toast(msg) {
-    const t = this.el.chars.classList.contains('hidden') ? this.el.toast : $('cs-toast');
+    const t = !$('ov-talents').classList.contains('hidden') ? $('tl-toast') : this.el.chars.classList.contains('hidden') ? this.el.toast : $('cs-toast');
     t.textContent = msg;
     t.classList.remove('hidden');
     clearTimeout(this._toastT);
@@ -536,6 +582,7 @@ export class UI {
   back(exit) {
     const open = ['ov-checkin', 'ov-missions', 'ov-hideout', 'ov-account', 'ov-ranking', 'ov-dev'].find((id) => !$(id).classList.contains('hidden'));
     if (!$('ov-maps').classList.contains('hidden')) return this.showMaps(false);
+    if (!$('ov-talents').classList.contains('hidden')) return this.showTalents(null);
     if (!this.el.chars.classList.contains('hidden')) return this.showChars(false);
     if (open === 'ov-dev') return this.showDev(false);
     if (open === 'ov-account') return this.showAccount(false);
@@ -687,8 +734,8 @@ export class UI {
       e.coins.textContent = `◆ ${cost} Cyber-Moedas (você tem ${have})`;
       e.coins.disabled = have < cost;
     }
-    if (s !== GS.Title) { this.el.chars.classList.add('hidden'); $('ov-maps').classList.add('hidden'); }
-    if (s === GS.GameOver) { clearTimeout(this._bannerT); e.banner.classList.add('hidden'); this._showOver(); }
+    if (s !== GS.Title) { this.el.chars.classList.add('hidden'); $('ov-maps').classList.add('hidden'); $('ov-talents').classList.add('hidden'); }
+    if (s === GS.GameOver) { clearTimeout(this._bannerT); clearTimeout(this._modT); e.banner.classList.add('hidden'); this._showOver(); }
     if (s === GS.Title) { this._renderChars(); this._showBest(); this.el.tapMusic.classList.toggle('hidden', !this.game.audio.music.paused); }
     if (s === GS.Playing || s === GS.Start) this._refreshSkills();
   }
@@ -732,9 +779,15 @@ export class UI {
   }
 
   _refreshSkills() {
-    const list = this.game.skills.slots();
-    this.el.skills.innerHTML = list.map((s) =>
+    const g = this.game, list = g.skills.slots(), W = g.skills.weapon;
+    // arma exclusiva primeiro (borda dourada), depois as skills da partida
+    this.el.skills.innerHTML = (W ? `<span class="chip wpn" style="--c:${W.def.color}">${W.def.icon}<small>${W.lvl}</small></span>` : '') + list.map((s) =>
       `<span class="chip${s.kind === 'passive' ? ' pas' : ''}${s.evolved ? ' evo' : ''}" style="--c:${s.color}">${s.icon}<small>${s.evolved ? 'EVO' : s.l}</small></span>`).join('');
+  }
+
+  _charXpLine(r) {
+    if (!r.charXp) return '';
+    return `<div class="lbl over-char">${r.charName} <b>+${r.charXp} XP</b> · NV ${r.charLvl.lvl}${r.charUp ? ` <b class="rec">▲ SUBIU DE NÍVEL! +${r.charUp} ponto${r.charUp > 1 ? 's' : ''} de talento</b>` : ''}</div>`;
   }
 
   _showOver() {
@@ -750,6 +803,7 @@ export class UI {
       <div class="lbl"><b style="color:${r.sectorColor}">${r.sectorName}</b> · ${r.victory ? 'chefe derrotado' : `parou na ${r.stage > r.stages - 1 ? 'luta com o chefe' : `fase ${r.stage}/${r.stages - 1}`}`}</div>
       <div class="grid3"><div><b>${fmtTime(r.time)}</b><span>tempo</span></div><div><b>${r.kills}</b><span>abates</span></div><div><b>${r.scrap}</b><span>Sucata</span></div></div>
       ${st}${bonus}${mod}
+      ${this._charXpLine(r)}
       <div class="lbl">Sucata guardada: ${r.totalScrap}</div>`;
       $('over-rank').textContent = '';
       const md = r.missionsDone || [];
@@ -762,7 +816,8 @@ export class UI {
       <div class="lbl">tempo de sobrevivência${r.best ? ' · <b class="rec">NOVO RECORDE!</b>' : ''}</div>
       <div class="grid3"><div><b>${r.kills}</b><span>abates</span></div><div><b>${r.level}</b><span>nível</span></div><div><b>${r.scrap}</b><span>Sucata</span></div></div>
       <div class="lbl">Chegou ao <b style="color:${r.sectorColor}">SETOR ${r.sector}</b> · ${r.sectorName}</div>
-      <div class="lbl">Recorde ${fmtTime(r.bestTime)} · Sucata guardada: ${r.totalScrap}</div>`;
+      <div class="lbl">Recorde ${fmtTime(r.bestTime)} · Sucata guardada: ${r.totalScrap}</div>
+      ${this._charXpLine(r)}`;
     const md = r.missionsDone || [];
     $('over-rank').textContent = this.game.isDev ? 'Conta DEV: partidas ficam fora do ranking' : r.best && r.rankPending ? 'Enviando recorde ao ranking…' : r.ranked ? '🏆 Novo recorde enviado ao ranking global!' : '';
     $('over-missions').innerHTML = md.length ? 'MISSÕES CONCLUÍDAS · resgate no menu<br>' + md.map((m) => `✔ ${missionText(m)} · ◆ ${m.reward}`).join('<br>') : '';

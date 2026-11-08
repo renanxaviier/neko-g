@@ -2,6 +2,7 @@
 
 import { RUN, TILE, xpForLevel, SAVE_KEY, WATER, JOURNEY, WEAPONS } from './config.js';
 import { journeyMap, starCount } from './journey.js';
+import { talentStats, charLevel, runCharXp, canLearn } from './talents.js';
 import { Rng } from './rng.js';
 import { World } from './world.js';
 import { Player } from './player.js';
@@ -75,17 +76,19 @@ export class Game {
     if (this.params.has('boss')) this.spawner.bossIdx = Number(this.params.get('boss')) || 0;    // testes: ?bossAt=5&boss=2
 
     // Atributos base globais (Esconderijo) — ainda sem tela de compra; ficam em 1x
-    this.maxHpBase = Math.round(RUN.maxHP * this.meta.hpMult * this.char.hpMult);
+    const T = this.tal = talentStats(this.meta, this.char.id);   // talentos do personagem (GDD 3.5c)
+    this.maxHpBase = Math.round(RUN.maxHP * this.meta.hpMult * this.char.hpMult * T.hp);
     this.maxHp = this.maxHpBase; this.hp = this.maxHp;
-    this.damageMult = this.meta.damageMult;
-    this.critChance = this.meta.critChance; this.critMult = this.meta.critMult;   // Ataque Crítico (Esconderijo)
+    this.damageMult = this.meta.damageMult * T.damage;
+    this.critChance = this.meta.critChance + T.crit; this.critMult = this.meta.critMult > 1 ? this.meta.critMult : 1.7;   // Ataque Crítico (Esconderijo + Precisão)
+    this.shield = T.shield; this.regenT = 0;
     this.crits = 0;
     this.enemyDamageMult = 1;
     this.skills.reset(this.char.start);                 // ataque básico do personagem (+ skills iniciais)
 
     this.runTime = 0; this.kills = 0; this.scrap = 0;
     this.level = 1; this.xp = 0; this.xpNeed = xpForLevel(1); this.pendingLevels = 0;
-    this.rerolls = 2; this.bans = 1;                  // por partida (o Esconderijo pode aumentar no futuro)
+    this.rerolls = 2 + this.tal.rerolls; this.bans = 1;                  // por partida (o Esconderijo pode aumentar no futuro)
     this.areaMult = 1; this.vampLvl = 0;
     this.hasRevived = false; this.usedRevive = false; this.isDying = false; this.dyingT = 0; this.deathAnim = 0;
     this.batteries = 0; this.elitesKilled = 0; this.mod = {};
@@ -124,6 +127,10 @@ export class Game {
     this.time += dt;
     this.input.tick(dt);
     if (!this.isDying) { this.runTime += dt; this.sectorTime += dt; }   // tempo de sobrevivência só conta jogando
+    if (this.tal && this.tal.regen && !this.isDying && (this.regenT += dt) >= 8) {   // Nanorreparo (talento)
+      this.regenT = 0;
+      if (this.hp < this.maxHp) { this.healPercent(this.tal.regen); }
+    }
     this.iframes -= dt;
     this.hurtFlash -= dt;
 
@@ -174,6 +181,13 @@ export class Game {
     const p = this.player;
     if (this.state !== GS.Playing || this.isDying || p.isDead) return false;
     if (this.iframes > 0 || p.dashInvulnerable || this.god || this.devGod) return false;
+    if (this.shield > 0) {                              // Escudo de Fase (talento): bloqueia um golpe
+      this.shield--; this.iframes = 0.6;
+      this.fx.effect('ring', { x: p.cx, y: p.cy, r: 10, maxR: 46, color: '#5ef0ff', life: 0.35 });
+      this.audio.sfx('select');
+      return false;
+    }
+    amount *= this.tal ? this.tal.taken : 1;            // Resistência (talento)
     this.hp = Math.max(0, this.hp - Math.round(amount));
     this.fx.playerHurt(p);
     this.juice.glitch(amount >= 12 ? 0.2 : 0.12);
@@ -241,6 +255,7 @@ export class Game {
   _enterSector(n) {
     const info = sectorInfo(n);
     this.sector = n; this.sectorInfo = info;
+    if (this.tal) this.shield = this.tal.shield;
     setSectorBiome(info.bi);
     this._setWater(info.biome.medium === 'water');
     this.audio.setTrack(info.biome.music || 'main');
@@ -274,6 +289,7 @@ export class Game {
     this.sectorTime = 0; this.sectorCleared = false; this.portal = null; this.stageDone = false;
     this.stageKills0 = this.kills; this.stageX0 = this.player.cx;
     this.stageBat0 = this.batteries; this.stageElite0 = this.elitesKilled; this.eliteT = JOURNEY.elite.first;
+    if (this.tal) this.shield = this.tal.shield;
     const n = this.map.n + s * JOURNEY.stageDiff, M = this.mod;
     this.diffN = n;
     this.sectorMult = (1 + 0.12 * n) * (M.hp || 1);
@@ -486,6 +502,20 @@ export class Game {
     this.char = CHARS[id];
     this.player.setCharacter(this.char);
     saveGame(this.meta);
+    return true;
+  }
+
+  // Talentos do personagem (GDD 3.5c)
+  learnTalent(id, tid) {
+    if (!canLearn(this.meta, id, tid)) return false;
+    const tal = (this.meta.tal || (this.meta.tal = {}))[id] || (this.meta.tal[id] = {});
+    tal[tid] = (tal[tid] || 0) + 1;
+    this.audio.sfx('buy'); saveGame(this.meta);
+    return true;
+  }
+  resetTalents(id) {
+    if (!this.meta.tal || !this.meta.tal[id]) return false;
+    this.meta.tal[id] = {}; this.audio.sfx('select'); saveGame(this.meta);
     return true;
   }
 
@@ -735,6 +765,11 @@ export class Game {
     result.sector = this.sector + 1; result.sectorName = this.sectorInfo.biome.name; result.sectorColor = this.sectorInfo.biome.color;
     result.bestTime = this.meta.bestTime;
     result.totalScrap = this.meta.scrap;
+    // XP permanente do personagem (nível e pontos de talento)
+    const cx = this.meta.cxp || (this.meta.cxp = {}), before = charLevel(cx[this.char.id]).lvl;
+    result.charXp = runCharXp({ kills: this.kills, time: this.runTime, stages: journey ? this.stage + (opt.victory ? 1 : 0) : this.sector, victory: !!opt.victory });
+    cx[this.char.id] = (cx[this.char.id] || 0) + result.charXp;
+    result.charLvl = charLevel(cx[this.char.id]); result.charUp = result.charLvl.lvl - before; result.charName = this.char.name;
     result.missionsDone = applyRun(this.meta, {
       kills: this.kills, time: this.runTime, scrap: this.scrap, level: this.level, crates: this.runStats.crates,
       tanks: this.runStats.tanks, biomes: this.runStats.biomes.size, evos: this.runStats.evos, char: this.char.id, bosses: this.runStats.bosses,
@@ -772,7 +807,7 @@ function loadSave() {
 
 // Monta o save a partir de um objeto (local ou vindo da nuvem), completando campos que faltam.
 export function buildMeta(raw) {
-  const base = { v: 1, rev: 0, scrap: 0, cyberCoins: 0, bestTime: 0, runs: 0, chars: ['gato'], selected: 'gato', nick: '', owner: '', jMax: 0, jStars: {}, weapons: {}, upgrades: { hp: 0, speed: 0, damage: 0, magnet: 0, luck: 0, crit: 0 } };
+  const base = { v: 1, rev: 0, scrap: 0, cyberCoins: 0, bestTime: 0, runs: 0, chars: ['gato'], selected: 'gato', nick: '', owner: '', jMax: 0, jStars: {}, weapons: {}, cxp: {}, tal: {}, upgrades: { hp: 0, speed: 0, damage: 0, magnet: 0, luck: 0, crit: 0 } };
   const data = raw && typeof raw === 'object' ? { ...base, ...raw, upgrades: { ...base.upgrades, ...(raw.upgrades || {}) } } : { ...base, upgrades: { ...base.upgrades } };
   // Multiplicadores calculados (não vão para o arquivo de save)
   for (const k of ['hpMult', 'speedMult', 'dashMult', 'damageMult', 'magnetMult', 'rareChance', 'critChance', 'critMult']) {

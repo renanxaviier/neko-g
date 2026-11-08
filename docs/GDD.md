@@ -168,13 +168,26 @@ Chefes surgem em marcos de tempo (3:00, 6:00, 9:00, 12:00 e repetem) e garantem 
 
 ---
 
+#### 3.2b Chefões novos (v0.16) [PROPOSTA]
+Entram na rotação de chefões depois do T-Rex (`BOSS_ORDER`). Ataques feitos por código; a arte tem só movimento.
+- **Titã Sobrecarregado** (4200 HP, chão): salto esmagador na direção do jogador (ondas de choque para os dois lados; chuva de orbes na fase 2+), soco de perto, anel de orbes do núcleo.
+- **A Rainha da Sucata** (3000 HP, voa): paira acima e de lado; investida reta na altura do jogador (anel de sucata ao parar na fase 2+), leque de orbes, chuva de sucata.
+- **O Sentinela de Dados** (3400 HP, voa): some num glitch e reaparece em cima do jogador, mergulho esmagador com ondas de dados; anel de cubos; leque de orbes.
+
 #### 3.5b Regras novas da Jornada (v0.16, 08/11/2026) [PROPOSTA]
 - **Fases novas (a partir do mapa 2):** **Caçada de Elite** (derrote 3–6 inimigos de elite, um por vez: médio/tanque do cenário com vida ×4, aura dourada, estrela, barra sempre visível e seta dourada na borda; cada um solta Sucata extra, uma cura e XP ×3) e **Colete G Batty** (pegue N baterias de XP na fase). O mapa 1 continua só com Sobreviva / Derrote / Saída.
 - **Modificador do mapa (a partir do mapa 2):** um por mapa, sorteado pela semente do mapa e anunciado no começo — **Enxame** (+45% inimigos vivos, aparecem mais rápido, −30% vida), **Blindados** (+50% vida, +60% Sucata), **Fúria** (+40% dano inimigo, +30% XP), **Sobrecarga** (skills recarregam 20% mais rápido, inimigos +20% vida). Valores em `JOURNEY.mods`.
 - **3 estrelas por mapa:** vencer · sem usar o revive · terminar com ≥ 50% de vida. Cada estrela conquistada pela 1ª vez dá ◆ 2 (também ao repetir o mapa). Salvas em `meta.jStars`.
 - **Mapa da Jornada** (botão 🗺 MAPAS): caminho subindo com um nó por mapa (cor do cenário, número, estrelas, ícone do modificador), o próximo pulsando, 2 mapas bloqueados de prévia e o marco de cada novo ciclo. Tocar num nó mostra as fases, o chefe, o modificador e o botão Jogar.
 
-## 4. Level Up e Skills
+#### 3.5c Etapa 2: nível do personagem e talentos (v0.16) [PROPOSTA]
+- Cada personagem tem **XP permanente** (`meta.cxp`), ganho ao fim de **toda** partida (Infinito ou Jornada): 1 por abate + 0,5 por segundo + 25 por fase/setor vencido + 150 por mapa vencido. Nível máximo 30; para passar do nível L: 220 + 110 × (L − 1). Valores em `web/src/talents.js` (`CHAR_LEVEL`).
+- Cada nível = **1 ponto de talento** daquele personagem. Árvore igual para todos, com 3 ramos de 4 talentos; o último de cada ramo pede 6 pontos gastos no ramo. Redistribuir é grátis.
+  - **Ataque:** Força (+3% dano, 5) · Precisão (+2% crítico, 3) · Ritmo (−3% recarga, 3) · Carrasco (+25% dano em elites e chefes, 1).
+  - **Defesa:** Couraça (+4% HP, 5) · Resistência (−3% dano recebido, 3) · Nanorreparo (cura 1% a cada 8 s, 3) · Escudo de Fase (bloqueia 1 golpe por fase/setor, 1).
+  - **Mobilidade:** Passos Leves (+2% velocidade, 5) · Coletor (+8% coleta, 3) · Fôlego (−5% recarga do dash, 3) · Sorte Grande (+1 rerrolagem, 1).
+- É isso que faz os mapas já vencidos ficarem mais fáceis com o tempo: o personagem volta mais forte. A tela de fim mostra o XP ganho e quando sobe de nível.
+
 
 - Ao subir de nível, o jogo pausa e mostra **3 cartas**; o jogador escolhe 1.
 - Cartas podem ser **skill nova** ou **upgrade de skill existente**.
@@ -295,6 +308,14 @@ Arte conceitual em `assets/concept/personagens_jogaveis.jpg`. Todos têm o kit b
 | Guaxinim | Plana com paraquedas (segurar PULO caindo) | Lâmina Hacker (−10% dano, +10% alcance) | Garras + Drones Orbitais | −10% HP, +30% ímã | ◆ 120 |
 | Pug | Queda pesada: DASH no ar → mergulho com onda de choque em área | Soco de Energia (+35% dano, −15% alcance) | Garras | +30% HP, um pouco mais lento | ◆ 160 |
 Desbloqueio com Cyber-Moedas na tela **Escolher personagem** (v0.15). Preços **[PROPOSTA]**.
+**Personagens novos jogáveis (v0.16) [PROPOSTA]** — `web/src/chars.js`, arte de `personagens_novos*.jpg` (tools/build_newchars.py):
+| Personagem | Traço | Ataque básico | Iniciais | Atributos | Preço |
+|---|---|---|---|---|---|
+| Coelho | 3 pulos no ar, pulo mais alto | Chute Meia-Lua | Garras | −15% HP, um pouco mais rápido | ◆ 200 |
+| Macaco | Arremessa dados (começa com Shurikens) | Soco Hacker (−20% dano, −15% alcance) | Garras + Shurikens | −10% HP, +15% ímã | ◆ 220 |
+| Tatu | Tanque: o dash vira bola blindada que atropela (dano a cada inimigo no caminho) | Garra Blindada (+20% dano) | Garras | +40% HP, mais lento | ◆ 260 |
+Agarrar a borda (ledge grab) ficou para depois. O Corvo continua "Em breve" (faltam as folhas de jogo).
+
 **Armas exclusivas (v0.16) [PROPOSTA]** — `WEAPONS` em config.js. Compradas e evoluídas com Sucata (150/300/500/800/1200) na tela Escolher personagem; com a arma comprada, o personagem começa a partida com ela disparando sozinha (só dispara com inimigo por perto):
 | Personagem | Arma | Efeito | Nível 5 |
 |---|---|---|---|

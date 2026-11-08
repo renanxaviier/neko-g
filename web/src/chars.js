@@ -26,19 +26,42 @@ export const CHARS = {
     player: { slam: true, maxRunSpeed: 205 },
     hpMult: 1.3, magnetMult: 1,
   },
+
+  // v0.16: personagens novos [PROPOSTA] (traços e números para o game-designer revisar)
+  coelho: {
+    id: 'coelho', name: 'COELHO', price: 200, prefix: 'coelho', color: '#ff5ad8',
+    trait: '3 pulos no ar · pulo mais alto',
+    melee: { name: 'Chute Meia-Lua', icon: '☾', color: '#ff5ad8', slash: ['fx.slashA', 'fx.slashC'], dmg: 0.95, range: 1.1 },
+    start: ['garras'],
+    player: { maxAirJumps: 3, jumpHeight: 124, maxRunSpeed: 235 },
+    hpMult: 0.85, magnetMult: 1,
+  },
+  macaco: {
+    id: 'macaco', name: 'MACACO', price: 220, prefix: 'macaco', color: '#4dff7a',
+    trait: 'Arremessa dados · começa com Shurikens',
+    melee: { name: 'Soco Hacker', icon: '⌨', color: '#4dff7a', slash: ['fx.slashB'], dmg: 0.8, range: 0.85 },
+    start: ['garras', 'shuriken'],
+    player: { maxRunSpeed: 235 },
+    hpMult: 0.9, magnetMult: 1.15,
+  },
+  tatu: {
+    id: 'tatu', name: 'TATU', price: 260, prefix: 'tatu', color: '#ffd84d',
+    trait: 'Tanque · dash em bola atropela · +40% HP',
+    melee: { name: 'Garra Blindada', icon: '⛏', color: '#ffd84d', slash: ['fx.slashA'], dmg: 1.2, range: 0.9 },
+    start: ['garras'],
+    player: { maxRunSpeed: 195, ballDash: true },
+    hpMult: 1.4, magnetMult: 1,
+  },
 };
 
-export const CHAR_ORDER = ['gato', 'guaxinim', 'pug'];
+export const CHAR_ORDER = ['gato', 'guaxinim', 'pug', 'coelho', 'macaco', 'tatu'];
 
 // Personagens já desenhados, ainda sem jogabilidade: aparecem na tela "Escolher personagem" como "Em breve".
 // Traços abaixo são [PROPOSTA] até o game-designer fechar cada um.
 export const CHARS_SOON = {
-  coelho: { id: 'coelho', name: 'COELHO', soon: true, color: '#ff5ad8', trait: 'Pulo altíssimo · meia-lua', teaser: 'Pernas de mola: 3 pulos no ar e um corte de energia em meia-lua.' },
-  macaco: { id: 'macaco', name: 'MACACO', soon: true, color: '#4dff7a', trait: 'Ataque à distância · agarra bordas', teaser: 'Arremessa granadas de dados e se pendura nas bordas das plataformas.' },
-  tatu:   { id: 'tatu',   name: 'TATU',   soon: true, color: '#ffd84d', trait: 'Tanque · dash em bola', teaser: 'Vira uma bola blindada que atravessa a horda.' },
   corvo:  { id: 'corvo',  name: 'CORVO',  soon: true, color: '#5ef0ff', trait: 'Voo curto', teaser: 'Bate asas no ar e ataca de cima. (Faltam as folhas de jogo.)' },
 };
 
 // Ordem da tela de escolha (jogáveis primeiro)
-export const ROSTER = [...CHAR_ORDER, 'coelho', 'macaco', 'tatu', 'corvo'];
+export const ROSTER = [...CHAR_ORDER, 'corvo'];
 export const charInfo = (id) => CHARS[id] || CHARS_SOON[id];

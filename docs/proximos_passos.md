@@ -1,4 +1,4 @@
-# Estado do projeto e próximos passos (atualizado em 07/11/2026, fim do dia)
+# Estado do projeto e próximos passos (atualizado em 08/11/2026)
 
 ## Onde paramos
 - **Protótipo (dev):** artifact "Neko G — protótipo (dev)" (slug 6d96f83e-1a43-42a6-aceb-e34735bd4a27), versão 1794100565-ea12.
@@ -30,5 +30,6 @@
 3. ~~**Menu do jogo melhor**~~ — **feito em 08/11** (v0.15): tela inicial limpa + tela **Escolher personagem** com os pedestais animados (GDD §8).
 4. ~~Mapa de progressão da Jornada~~ — **feito** (caminho com nós, estrelas e detalhes).
 5. ~~Armas por personagem~~ — **feito** para Gato, Guaxinim e Pug (GDD §7). Coelho/Macaco/Tatu junto com a integração deles.
-6. Integrar os novos personagens (quando chegarem os quadros que faltam) e os 3 novos chefões.
-- Em seguida, etapa 2 da Jornada: nível do personagem permanente + árvore de talentos.
+6. ~~Integrar Coelho, Macaco, Tatu e os 3 chefões~~ — **feito** (GDD §7 e 3.2b). Falta: Corvo (folhas de jogo), armas do Coelho/Macaco/Tatu, agarrar borda.
+- ~~Etapa 2 da Jornada: nível do personagem + talentos~~ — **feito** (GDD 3.5c).
+- Próximo: etapa 3 da Jornada (ranking de mapa mais longe), armas do Coelho/Macaco/Tatu, agarrar borda, Corvo.

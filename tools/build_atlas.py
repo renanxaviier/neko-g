@@ -277,6 +277,24 @@ ANIMS = {
     'mecha.hurt':     (f('aq_mecha', 6, 7), 8, True, (218, 80), 'feet'),
     'mecha.death':    (f('aq_mecha', 8, 9, 10), 1, False, (218, 80), 'feet'),
     # ---- v0.15: personagens no pedestal (tela Escolher personagem; quadros de tools/build_menu.py) ----
+    # v0.16: chefões novos (tools/build_newbosses.py)
+    'tita.walk': (f('tita_walk', 0, 1, 2), 6, True, (345, 104), 'feet'),
+    'tita.jump': (f('tita_jump', 0), 1, True, (345, 104), 'feet'),
+    'tita.air': (f('tita_air', 0), 1, True, (345, 104), 'feet'),
+    'tita.land': (f('tita_land', 0), 1, True, (345, 104), 'feet'),
+    'rainha.hover': (f('rainha_hover', 0, 1), 6, True, (305, 76), 'mid'),
+    'rainha.dash': (f('rainha_dash', 0), 1, True, (305, 76), 'mid'),
+    'rainha.turn': (f('rainha_turn', 0), 1, True, (305, 76), 'mid'),
+    'sentinela.fly': (f('sentinela_fly', 0, 1, 2, 3), 8, True, (341, 82), 'mid'),
+    'sentinela.tpout': (f('sentinela_tpout', 0), 1, True, (341, 82), 'mid'),
+    'sentinela.tpin': (f('sentinela_tpin', 0), 1, True, (341, 82), 'mid'),
+    'sentinela.dive': (f('sentinela_dive', 0), 1, True, (341, 82), 'mid'),
+    # v0.16: Coelho, Macaco e Tatu (tools/build_newchars.py). Altura de referência = quadro parado.
+    **{f'{c}.{a}': (f(f'{c}_{a}', *range(n)), fps, loop, H, 'feet')
+       for c, H in (('coelho', (242, 54)), ('macaco', (219, 42)), ('tatu', (226, 46)))
+       for a, n, fps, loop in (('idle', 1, 1, True), ('run', 2, 8, True), ('dash', 1, 1, True), ('attack', 1, 1, False), ('hit', 1, 1, False),
+                               ('death', 2 if c == 'coelho' else 1, 4, False), ('jump', 1, 1, True), ('airjump', 2, 10, True), ('fall', 1, 1, True),
+                               ('land', 1, 1, False), ('wall', 1, 1, True))},
     # v0.16: armas exclusivas dos personagens (assets/concept/armas_vfx.jpg, tools/build_weapons.py)
     'wpn.garras': (f('wpn_garras', 0, 1, 2), 14, False, (140, 40), 'mid'),
     'wpn.dados': (f('wpn_dados', 1, 2, 3, 4, 5), 14, False, (138, 60), 'mid'),
@@ -341,7 +359,7 @@ for name, (paths, fps, loop, (src_h, world_h), mode) in ANIMS.items():
 # Uma imagem só já passava de 4096 px de altura (limite de textura de celulares antigos) e ocupava ~32 MB
 # decodificada. Agora o jogo carrega o núcleo (personagens, inimigos, efeitos) e só as peças do cenário atual.
 import re
-BOSSES = {'polvo', 'quimera', 'dragao', 'trex', 'mecha', 'serpente'}
+BOSSES = {'polvo', 'quimera', 'dragao', 'trex', 'mecha', 'serpente', 'tita', 'rainha', 'sentinela'}
 bsrc = open('/home/claude/web/src/biomes.js').read()
 bsrc = bsrc[bsrc.index('export const BIOMES'):bsrc.index('export const SECTOR_ROSTER')]
 uses = {}                                                   # peça → biomas que a usam

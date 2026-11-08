@@ -1204,7 +1204,9 @@ export class Renderer {
     if (fr) {
       ctx.globalAlpha = blink ? 0.3 : 1;
       const lean = p.state === PS.Death ? 0 : rot;
-      this._drawFrame(ctx, fr, x + p.w / 2, y + p.h, p.facing, false, p.sx, p.sy, lean);
+      // personagem com 1 quadro parado (Coelho, Macaco, Tatu): respiração leve no lugar da animação
+      const br = anim.endsWith('.idle') && ATLAS[anim].frames.length === 1 ? Math.sin(g.time * 3.2) * 0.022 : 0;
+      this._drawFrame(ctx, fr, x + p.w / 2, y + p.h, p.facing, false, p.sx * (1 - br * 0.5), p.sy * (1 + br), lean);
       if (g.hurtFlash > 0) { ctx.globalAlpha = 0.8; this._drawFrame(ctx, fr, x + p.w / 2, y + p.h, p.facing, true, p.sx, p.sy, lean); }
       ctx.globalAlpha = 1;
       this._lastPlayerFrame = fr;
@@ -1229,7 +1231,7 @@ export class Renderer {
     if (p.slamT < 0.22 && ATLAS[P + '.land']) return [P + '.land', 0];
     if (p.state === PS.Dash) return [P + '.dash', p.animT];
     if (p.state === PS.WallSlide) return [P + '.wall', 0];
-    if (p.attackT < 0.16) return [P + (p.attackCombo ? '.attack2' : '.attack'), p.attackT];
+    if (p.attackT < 0.16) return [P + (p.attackCombo && ATLAS[P + '.attack2'] ? '.attack2' : '.attack'), p.attackT];
     if (p.state === PS.Glide) return [P + '.glide', p.animT];
     if (p.state === PS.Jump) return [P + (p.airJumpT < 0.35 ? '.airjump' : '.jump'), p.animT];
     if (p.state === PS.Fall) return [P + '.fall', p.animT];

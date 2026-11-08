@@ -120,17 +120,17 @@ export class Skills {
   applyPassives() {
     const g = this.game;
     const ima = this.passives.get('ima') || 0;
-    g.magnetMult = (1 + 0.2 * ima) * (this.evolved.has('drones') ? 1.5 : 1) * g.meta.magnetMult * (g.char ? g.char.magnetMult : 1);
-    g.cdMult = Math.pow(0.94, this.passives.get('resfriamento') || 0) * ((g.mod && g.mod.cd) || 1);   // Sobrecarga (Jornada)
+    g.magnetMult = (1 + 0.2 * ima) * (this.evolved.has('drones') ? 1.5 : 1) * g.meta.magnetMult * (g.char ? g.char.magnetMult : 1) * ((g.tal && g.tal.magnet) || 1);
+    g.cdMult = Math.pow(0.94, this.passives.get('resfriamento') || 0) * ((g.mod && g.mod.cd) || 1) * ((g.tal && g.tal.cd) || 1);   // + Ritmo (talento)   // Sobrecarga (Jornada)
     const turbo = 1 + 0.05 * (this.passives.get('turbo') || 0);
-    g.player.speedMult = turbo * g.meta.speedMult;
+    g.player.speedMult = turbo * g.meta.speedMult * ((g.tal && g.tal.speed) || 1);
     g.player.dashMult = turbo * g.meta.dashMult;
     g.setMaxHpMult(1 + 0.1 * (this.passives.get('blindagem') || 0));
     g.areaMult = 1 + 0.08 * (this.passives.get('area') || 0);
     g.vampLvl = this.passives.get('vampirismo') || 0;
     const dd = this.passives.get('dashduplo') || 0;
     g.player.dashMax = dd ? 2 : 1;
-    g.player.dashCdMult = Math.pow(0.94, Math.max(0, dd - 1));
+    g.player.dashCdMult = Math.pow(0.94, Math.max(0, dd - 1)) * ((g.tal && g.tal.dash) || 1);
   }
 
   // ---------------- Simulação ----------------
@@ -168,6 +168,19 @@ export class Skills {
       }
       this.timers.set(id, t);
     }
+    // Tatu: o dash vira uma bola blindada que atropela (cada inimigo leva dano uma vez por dash)
+    if (p.C.ballDash && p.isDashing) {
+      if (!this._wasDashing) (this._ballHit || (this._ballHit = new Set())).clear();
+      const near = g.enemies.grid.query(p.x - 20, p.y - 10, p.x + p.w + 20, p.y + p.h + 10, this._near);
+      for (let i = 0; i < near.length; i++) {
+        const e = near[i];
+        if (!e.active || this._ballHit.has(e) || e.x > p.x + p.w + 8 || e.x + e.w < p.x - 8 || e.y > p.y + p.h || e.y + e.h < p.y) continue;
+        this._ballHit.add(e);
+        g.enemies.hurt(e, (22 + 3 * g.level) * g.damageMult, p.cx, 260);
+        g.fx.emit(e.cx, e.cy, 5, '#ffd84d', 160, 0.3, 2);
+      }
+      if (this._ballHit.size && !this._ballShook) { g.fx.shake(3); this._ballShook = true; }
+    } else this._ballShook = false;
     // Bumerangue Duplo: cada dash também lança um
     if (p.isDashing && !this._wasDashing && this.evolved.has('bumerangue')) this._throwBoom(p.dashDir || p.facing, 0, stats.bumerangue(this.actives.get('bumerangue'), true));
     this._wasDashing = p.isDashing;

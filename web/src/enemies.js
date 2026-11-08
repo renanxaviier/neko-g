@@ -622,6 +622,7 @@ export class Enemies {
   hurt(e, amount, srcX, knock = 60) {
     if (!e.active) return;
     const g = this.game;
+    if ((e.def.boss || e.elite) && g.tal) amount *= g.tal.bossDmg;   // Carrasco (talento)
     let crit = false;
     if (g.critChance > 0 && amount < 1e5 && Math.random() < g.critChance) {   // Ataque Crítico (Esconderijo)
       amount *= g.critMult; crit = true;

@@ -3,7 +3,7 @@
 
 import { TILE, VIEW_W, WATER } from './config.js';
 
-export const BOSS_ORDER = ['polvo', 'quimera', 'dragao', 'trex'];
+export const BOSS_ORDER = ['polvo', 'quimera', 'dragao', 'trex', 'tita', 'rainha', 'sentinela'];
 // Variações aquáticas (setor submerso): um dos dois é sorteado por partida (?wboss=mecha|serpente para testar)
 export const WATER_BOSSES = ['mecha', 'serpente'];
 export const BOSS_FIRST = 180;          // primeiro chefe aos 3:00
@@ -17,6 +17,10 @@ export const BOSS_TYPES = {
   trex:    { ...B, name: 'T-REX CIBERNÉTICO',   w: 78,  h: 100, hp: 5500, speed: 70,  dmg: 20, color: '#5a5a70', glow: '#ff5a1a', jump: 500 },
   mecha:   { ...B, name: 'MECHA-POVOADOR',      w: 62,  h: 74,  hp: 2000, speed: 62,  dmg: 17, color: '#5a5060', glow: '#ff9a3c', jump: 470 },
   serpente:{ ...B, name: 'O GRANDE GLITCH',     w: 118, h: 40,  hp: 1800, speed: 125, dmg: 14, color: '#2a8a9a', glow: '#5ef0ff', flying: true },
+  // v0.16: chefões novos (assets/concept/chefoes_novos.jpg) — ataques feitos por código [PROPOSTA]
+  tita:     { ...B, name: 'TITÃ SOBRECARREGADO', w: 66, h: 92,  hp: 4200, speed: 78,  dmg: 19, color: '#4a4a58', glow: '#ff9a3c', jump: 640 },
+  rainha:   { ...B, name: 'A RAINHA DA SUCATA',  w: 96, h: 54,  hp: 3000, speed: 135, dmg: 15, color: '#5a3a5a', glow: '#ff4df0', flying: true },
+  sentinela:{ ...B, name: 'O SENTINELA DE DADOS', w: 62, h: 66, hp: 3400, speed: 105, dmg: 15, color: '#3a5a5a', glow: '#4dffa6', flying: true },
 };
 
 const GRAVITY = 1350;
@@ -113,6 +117,152 @@ export function bossAI(E, e, dt, p) {
     case 'trex': trex(E, e, dt, p, ph, dir); break;
     case 'mecha': mecha(E, e, dt, p, ph, dir); break;
     case 'serpente': serpente(E, e, dt, p, ph, dir); break;
+    case 'tita': tita(E, e, dt, p, ph, dir); break;
+    case 'rainha': rainha(E, e, dt, p, ph, dir); break;
+    case 'sentinela': sentinela(E, e, dt, p, ph, dir); break;
+  }
+}
+
+// ---------------- Titã Sobrecarregado: salto esmagador, soco e núcleo que dispara ----------------
+function titaLand(E, e, p, ph) {
+  const g = E.game, d = e.def;
+  melee(E, e, p, e.facing, 70, e.h * 0.6, d.dmg, '#ff9a3c');
+  for (const s of [-1, 1]) {
+    E.shoot(e.cx + s * 30, e.y + e.h - 9, s * (ph >= 2 ? 300 : 240), 0, 'wave', d.dmg * 0.6, { color: '#ff9a3c', ghost: true, life: 1.5 });
+    if (ph === 3) E.shoot(e.cx + s * 30, e.y + e.h - 9, s * 170, 0, 'wave', d.dmg * 0.5, { color: '#ffd84d', ghost: true, life: 1.6 });
+  }
+  g.fx.emit(e.cx, e.y + e.h - 4, 22, '#c8a080', 260, 0.45, 3, 400, Math.PI, -Math.PI / 2);
+  g.fx.shake(10); g.fx.sfx('cannon');
+  g.juice.shock(e.cx, e.y + e.h - 6, 150, 0.09, 0.5);
+}
+
+function tita(E, e, dt, p, ph, dir) {
+  const g = E.game, d = e.def;
+  phaseHit(E, e, ph);
+  e.vy = Math.min(e.vy + GRAVITY * 0.6 * dt, 520);
+  const air = !e.onGround;
+  e.anim = e.state === 'tele' && e.next === 'leap' ? 'tita.jump' : e.state === 'leap' ? 'tita.air' : e.state === 'rec' && e.landed ? 'tita.land' : 'tita.walk';
+  if (e.hurtT > 0) { approach(e, 'vx', 0, 1500 * dt); return; }
+  if (e.state === 'tele') {
+    approach(e, 'vx', 0, 1500 * dt);
+    if ((e.st -= dt) > 0) return;
+    if (e.next === 'leap') {                        // salto alto na direção do jogador
+      const tx = p.cx - e.cx;
+      e.vy = -d.jump; e.vx = Math.max(-330, Math.min(330, tx * 1.1)); e.onGround = false; e.state = 'leap'; e.st = 2.5; g.fx.sfx('dash');
+      g.fx.emit(e.cx, e.y + e.h, 14, '#c8a080', 200, 0.4, 3, 300, Math.PI, -Math.PI / 2);
+      return;
+    }
+    if (e.next === 'punch') { melee(E, e, p, e.lockX, 96, e.h * 0.55, d.dmg * 1.1, '#ffd84d'); g.fx.shake(5); g.fx.sfx('cannon'); e.state = 'rec'; e.landed = false; e.st = 0.4; return; }
+    if (e.next === 'core') {                        // núcleo sobrecarregado: anel de orbes (e um leque no jogador na fase 3)
+      ring(E, e, ph === 3 ? 14 : 10, 150, 'orb', '#ff9a3c', d.dmg * 0.55, e.t);
+      if (ph === 3) fan(E, e, p, 3, 0.5, 240, 'orb', '#ffd84d');
+      g.fx.sfx('laser'); e.state = 'rec'; e.landed = false; e.st = 0.5; return;
+    }
+    e.state = 'move'; e.cd = 1.2; return;
+  }
+  if (e.state === 'leap') {
+    if (air && e.vy > 0 && Math.abs(p.cx - e.cx) > 20) approach(e, 'vx', dir * 160, 300 * dt);   // corrige no ar, em cima do jogador
+    if ((e.st -= dt) <= 2.3 && e.onGround) { titaLand(E, e, p, ph); if (ph >= 2) rain(E, e, p, ph === 3 ? 6 : 4, 280, 'orb', '#ff9a3c', d.dmg * 0.45); e.state = 'rec'; e.landed = true; e.st = 0.7; }
+    else if (e.st <= 0) { e.state = 'rec'; e.st = 0.3; }
+    return;
+  }
+  if (e.state === 'rec') { approach(e, 'vx', 0, 1600 * dt); if ((e.st -= dt) <= 0) { e.state = 'move'; e.landed = false; e.cd = ph === 1 ? 1.4 : 1.0; } return; }
+  const spd = d.speed * (ph === 3 ? 1.35 : 1);
+  approach(e, 'vx', Math.abs(p.cx - e.cx) > 46 ? dir * spd : 0, 500 * dt);
+  if (e.onGround && e.hitWall !== 0) e.vy = -d.jump * 0.7;
+  if (e.cd <= 0 && e.onGround) {
+    e.k = (e.k || 0) + 1;
+    let pick;
+    if (Math.abs(p.cx - e.cx) < 95 && Math.abs(p.cy - e.cy) < 80) pick = e.k % 3 === 0 ? 'leap' : 'punch';
+    else { const o = ph === 1 ? ['leap', 'core', 'leap'] : ['leap', 'core', 'leap', 'punch']; pick = o[e.k % o.length]; }
+    e.lockX = dir;
+    tele(E, e, pick, pick === 'leap' ? 0.6 : pick === 'punch' ? 0.45 : 0.7);
+  }
+}
+
+// ---------------- A Rainha da Sucata: paira, investida de lado a lado e chuva de sucata ----------------
+function rainha(E, e, dt, p, ph, dir) {
+  const g = E.game, d = e.def, view = g.camera.view;
+  phaseHit(E, e, ph);
+  e.anim = e.state === 'dash' ? 'rainha.dash' : e.state === 'tele' && e.next === 'dash' ? 'rainha.turn' : 'rainha.hover';
+  if (e.hurtT > 0) { e.vx *= 0.9; e.vy *= 0.9; return; }
+  if (e.state === 'tele') {
+    e.vx *= 0.86; e.vy *= 0.86;
+    if (e.next === 'dash') e.facing = e.lockX;
+    if ((e.st -= dt) > 0) return;
+    if (e.next === 'dash') { e.state = 'dash'; e.st = 1.0; e.vx = e.lockX * (ph === 3 ? 620 : 520); e.vy = 0; e.ty = p.cy - 6; g.fx.sfx('dash'); return; }
+    if (e.next === 'scrap') {                       // chuva de sucata em cima do jogador
+      rain(E, e, p, ph === 3 ? 9 : 6, 320, 'cube', '#ff4df0', d.dmg * 0.5);
+      g.fx.sfx('throw'); e.state = 'rest'; e.st = 0.5; return;
+    }
+    if (e.next === 'claws') { fan(E, e, p, ph >= 2 ? 5 : 3, 0.8, 230, 'orb', '#ff6ad5'); g.fx.sfx('laser'); e.state = 'rest'; e.st = 0.45; return; }
+    e.state = 'move'; e.cd = 1.2; return;
+  }
+  if (e.state === 'dash') {                         // investida reta na altura do jogador; toca no corpo = dano
+    approach(e, 'vy', (e.ty - e.cy) * 3, 900 * dt);
+    if (Math.random() < 0.5) g.fx.emit(e.cx - e.facing * 40, e.cy, 2, '#ff4df0', 80, 0.3, 2);
+    if ((e.st -= dt) <= 0 || (e.facing > 0 ? e.cx > view.right + 60 : e.cx < view.left - 60)) {
+      e.state = 'rest'; e.st = 0.4; e.vx *= 0.3;
+      if (ph >= 2) ring(E, e, 8, 130, 'cube', '#ff4df0', d.dmg * 0.45, e.t);
+    }
+    return;
+  }
+  if (e.state === 'rest') { e.vx *= 0.9; e.vy *= 0.9; if ((e.st -= dt) <= 0) { e.state = 'move'; e.cd = ph === 1 ? 1.3 : 0.9; } return; }
+  const side = e.cx < p.cx ? -1 : 1;
+  flyTo(e, p.cx + side * 150, p.cy - 120 + Math.sin(e.t * 1.6) * 30, d.speed, 420, dt);
+  if (e.cd <= 0) {
+    e.k = (e.k || 0) + 1;
+    const o = ph === 1 ? ['dash', 'claws', 'scrap'] : ['dash', 'scrap', 'claws', 'dash'];
+    const pick = o[e.k % o.length];
+    e.lockX = dir;
+    tele(E, e, pick, pick === 'dash' ? 0.7 : 0.55);
+  }
+}
+
+// ---------------- O Sentinela de Dados: teletransporte, mergulho esmagador e cubos de dados ----------------
+function sentinela(E, e, dt, p, ph, dir) {
+  const g = E.game, d = e.def;
+  phaseHit(E, e, ph);
+  e.anim = e.state === 'gone' || (e.state === 'tele' && e.next === 'port') ? 'sentinela.tpout' : e.state === 'appear' ? 'sentinela.tpin' : e.state === 'dive' ? 'sentinela.dive' : 'sentinela.fly';
+  e.cloak = e.state === 'gone';
+  if (e.hurtT > 0 && e.state !== 'gone') { e.vx *= 0.9; e.vy *= 0.9; return; }
+  if (e.state === 'tele') {
+    e.vx *= 0.85; e.vy *= 0.85;
+    if ((e.st -= dt) > 0) return;
+    if (e.next === 'port') { e.state = 'gone'; e.st = 0.45; g.fx.sprite('fx.glitch', e.cx, e.cy, 0.4, 2.6); g.fx.sfx('laser'); return; }
+    if (e.next === 'cubes') { ring(E, e, ph === 3 ? 12 : 8, 140, 'cube', '#4dffa6', d.dmg * 0.55, e.t); if (ph >= 2) fan(E, e, p, 3, 0.4, 260, 'cube', '#5ef0ff'); g.fx.sfx('laser'); e.state = 'rest'; e.st = 0.5; return; }
+    if (e.next === 'stream') { fan(E, e, p, ph >= 2 ? 7 : 5, 1.1, 200, 'orb', '#4dffa6'); g.fx.sfx('laser'); e.state = 'rest'; e.st = 0.45; return; }
+    e.state = 'move'; e.cd = 1; return;
+  }
+  if (e.state === 'gone') {                         // some e reaparece em cima do jogador
+    e.vx = 0; e.vy = 0;
+    if ((e.st -= dt) <= 0) {
+      e.x = p.cx - e.w / 2; e.y = Math.min(p.y - 150, g.camera.view.top + 70);
+      e.state = 'appear'; e.st = ph === 3 ? 0.4 : 0.55;
+      g.fx.sprite('fx.glitch', e.cx, e.cy, 0.4, 2.6);
+    }
+    return;
+  }
+  if (e.state === 'appear') { e.vx = 0; e.vy = 0; e.flash = 0.1; if ((e.st -= dt) <= 0) { e.state = 'dive'; e.st = 1.2; e.vy = 640; g.fx.sfx('dash'); } return; }
+  if (e.state === 'dive') {                         // descida rápida: no chão, onda de dados para os lados
+    e.vx = 0;
+    const floor = g.world.surfaceNear(Math.floor(e.cx / TILE), e.y + e.h - 4, 4);
+    if ((floor !== null && e.y + e.h >= floor - 2) || (e.st -= dt) <= 0) {
+      if (floor !== null) e.y = Math.min(e.y, floor - e.h);
+      e.vy = 0;
+      for (const s of [-1, 1]) E.shoot(e.cx + s * 24, e.y + e.h - 9, s * (ph >= 2 ? 300 : 240), 0, 'wave', d.dmg * 0.6, { color: '#4dffa6', ghost: true, life: 1.3 });
+      g.fx.shake(8); g.fx.sfx('cannon'); g.juice.shock(e.cx, e.y + e.h - 6, 130, 0.08, 0.45);
+      e.state = 'rest'; e.st = 0.8;
+    }
+    return;
+  }
+  if (e.state === 'rest') { e.vx *= 0.9; e.vy = Math.min(e.vy, 0) - 120 * dt; if ((e.st -= dt) <= 0) { e.state = 'move'; e.cd = ph === 1 ? 1.3 : 0.9; } return; }
+  flyTo(e, p.cx + Math.sin(e.t * 0.9) * 120, p.cy - 140, d.speed, 380, dt);
+  if (e.cd <= 0) {
+    e.k = (e.k || 0) + 1;
+    const o = ph === 1 ? ['port', 'stream', 'cubes'] : ['port', 'cubes', 'port', 'stream'];
+    const pick = o[e.k % o.length];
+    tele(E, e, pick, pick === 'port' ? 0.5 : 0.6);
   }
 }
 
