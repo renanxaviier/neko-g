@@ -9,6 +9,8 @@ import { pointsLeft } from './talents.js';
 
 // Novidades da versão atual (aparece uma vez por versão)
 export const CHANGELOG = [
+  'Início de fase com "Prepare-se… Vai!": sem travadinha ao começar',
+  'Ataque manual por padrão; o automático fica em ⚙ Opções',
   'Abertura RX Games: o jogo carrega tudo antes da tela inicial (sem travadas no começo)',
   'Expedição na Jornada: ao vencer um mapa, siga para o próximo com nível, skills e vida',
   'Inimigos acompanham a sua força (sem enfraquecer o personagem)',

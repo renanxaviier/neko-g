@@ -638,6 +638,19 @@ export class UI {
     this._refreshOpts();
   }
 
+  // Início de fase: fundo escuro que clareia + "PREPARE-SE…" → "VAI!" (o jogo fica parado enquanto carrega)
+  _stageFade() {
+    const g = this.game, el = $('stage-fade'), t = g.introT;
+    if (!(t > -0.45)) { if (!el.classList.contains('hidden')) el.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+    const k = Math.max(0, Math.min(1, t / (g.introMax || 1)));
+    el.style.background = `rgba(5,3,15,${(t > 0 ? 0.25 + 0.75 * k : 0).toFixed(3)})`;
+    const b = $('stage-go'), go = t <= 0.25;
+    if (go !== b.classList.contains('go')) { b.classList.toggle('go', go); b.textContent = go ? 'VAI!' : 'PREPARE-SE…'; }
+    b.style.opacity = t > 0 ? 1 : Math.max(0, 1 + t / 0.45).toFixed(2);
+    if (t <= 0 && g.introT > -1) g.introT -= 1 / 60;   // contagem do "VAI!" sumindo (o jogo já está rodando)
+  }
+
   // ---------------- Tutorial da 1ª partida ----------------
   // Dicas curtas no topo, uma de cada vez; cada uma termina quando o jogador faz a ação (ou depois de um tempo).
   _tutorial() {
@@ -648,7 +661,7 @@ export class UI {
       { txt: touch ? '◀ ▶  Ande com os botões da esquerda' : '◀ ▶  Ande com A/D ou as setas', btn: ['btn-left', 'btn-right'], done: () => Math.abs(p.x - T.x0) > 140 },
       { txt: 'Toque PULO. No ar, toque de novo: pulo duplo!', btn: ['btn-jump'], done: () => p.airJumpT < 0.3 },
       { txt: 'DASH: avanço rápido que atravessa inimigos sem levar dano', btn: ['btn-dash'], done: () => p.isDashing },
-      { txt: g.settings.auto ? 'O ataque é automático perto dos inimigos (dá para mudar em ⚙ Opções)' : 'Segure ATAQUE para golpear', btn: g.settings.auto ? [] : ['btn-attack'], done: () => T.t > 5 },
+      { txt: g.settings.auto ? 'O ataque é automático perto dos inimigos (dá para mudar em ⚙ Opções)' : 'Segure ATAQUE para golpear. Prefere automático? Ligue em ⚙ Opções', btn: g.settings.auto ? [] : ['btn-attack'], done: () => T.t > 5 },
       { txt: 'Pegue as G Batty ⚡ que os inimigos soltam para subir de nível e escolher skills', btn: [], done: () => g.level > 1 || T.t > 7 },
       { txt: 'Cumpra o objetivo da fase (barra no topo) e entre no portal. Boa sorte!', btn: [], done: () => T.t > 5 },
     ];
@@ -899,7 +912,7 @@ export class UI {
       e.coins.textContent = `◆ ${cost} Cyber-Moedas (você tem ${have})`;
       e.coins.disabled = have < cost;
     }
-    if (s === GS.Title || s === GS.GameOver) this._tutEnd();
+    if (s === GS.Title || s === GS.GameOver) { this._tutEnd(); $('stage-fade').classList.add('hidden'); }
     if (s !== GS.Title) { this.el.chars.classList.add('hidden'); $('ov-maps').classList.add('hidden'); $('ov-talents').classList.add('hidden'); $('ov-notif').classList.add('hidden'); if (s !== GS.Paused) $('ov-opts').classList.add('hidden'); }
     if (s === GS.GameOver) { clearTimeout(this._bannerT); clearTimeout(this._modT); e.banner.classList.add('hidden'); this._showOver(); }
     if (s === GS.Title) { this._renderChars(); this._showBest(); this.el.tapMusic.classList.toggle('hidden', !this.game.audio.music.paused); }
@@ -1077,7 +1090,7 @@ export class UI {
       return;
     }
     this._updateControls();
-    if (g.state === GS.Playing) this._tutorial();
+    if (g.state === GS.Playing) { this._stageFade(); if (!(g.introT > 0)) this._tutorial(); }
     if ((g.showFps || g.settings.perf) && window.__fps && (this._fpsT = (this._fpsT || 0) + 1) % 30 === 0) this._perfMeter();
     if (g.sectorInfo) this._updateSector();
     const hp = Math.max(0, Math.ceil(g.hp));

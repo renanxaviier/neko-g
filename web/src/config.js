@@ -2,7 +2,7 @@
 // Unidades: pixels de mundo e segundos. 1 tile = 32 px.
 
 export const TILE = 32;
-export const VERSION = '0.21 teste';   // aparece na tela inicial e no feedback dos testadores
+export const VERSION = '0.22 teste';   // aparece na tela inicial e no feedback dos testadores
 export const VIEW_W = 410;          // largura visível do mundo (retrato; era 380 até a v0.17); a altura se adapta à tela
 export const CHUNK_W = 24;          // largura de um chunk em tiles
 export const CHUNK_H = 16;          // altura de um chunk em tiles (abaixo disso é chão sólido)
@@ -77,6 +77,8 @@ export const JOURNEY = {
 // GDD 10.1 / 10.2
 export const RUN = {
   maxHP: 120,
+  introTime: 1.0,             // início de fase: tela clareando com tudo parado (carrega/aquece o cenário; até +2 s se faltar algo)
+  warpIntro: 0.6,             // o mesmo ao passar por um portal
   hitStopGap: 0.45,           // pausa de impacto dos golpes comuns: no máximo uma a cada 0,45 s
   damageIFrames: 0.5,
   startInvuln: 3,

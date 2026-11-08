@@ -94,6 +94,7 @@ export class Game {
     this.batteries = 0; this.elitesKilled = 0; this.mod = {};
     this.map = null; this.stageInfo = null; this.stage = 0;
     this.expedition = 1; this.adaptEx = 0; this.adaptHp = 1; this.adaptAlive = 1;
+    this.startIntro(RUN.introTime);
     this.iframes = 0; this.hurtFlash = 0; this.hitStop = 0;
     this.reviveT = 0; this.adPlaying = false; this.adT = 0;
     this.camera.snap(this.player);
@@ -125,6 +126,13 @@ export class Game {
 
   // Um passo fixo da simulação (só no estado Playing; Level Up, Revive e Game Over = timeScale 0)
   step(dt) {
+    if (this.introT > 0) {                             // início de fase: tudo parado enquanto a tela clareia
+      this.introT -= dt; this.introWait += dt;
+      const R = this.renderer, bid = this.sectorInfo && this.sectorInfo.biome.id;
+      if (R) R.warmGpu();                              // envia as imagens do cenário para a GPU agora, não no meio da ação
+      if (this.introT <= 0.3 && R && bid && !R.sceneReady(bid) && this.introWait < this.introMax + 2) this.introT = 0.3;   // ainda carregando: segura
+      return;
+    }
     this.time += dt;
     this.input.tick(dt);
     if (!this.isDying) { this.runTime += dt; this.sectorTime += dt; }   // tempo de sobrevivência só conta jogando
@@ -356,6 +364,8 @@ export class Game {
   }
 
   // Mapa vencido: bônus de Sucata (e Cyber-Moedas na 1ª vez) e libera o próximo
+  startIntro(t) { this.introT = this.introMax = t; this.introWait = 0; }
+
   // Dificuldade proporcional à força (Jornada): excesso de nível sobre quem começou o mapa do zero
   _adapt() {
     const A = JOURNEY.adapt, M = this.mod || {};
@@ -387,6 +397,7 @@ export class Game {
     this._enterMap(this.map.n + 1);
     this.hp = Math.min(this.maxHp, this.hp + this.maxHp * JOURNEY.continueHeal);
     this.iframes = 2;
+    this.startIntro(RUN.introTime);
     this.setState(GS.Playing);
     return true;
   }
@@ -475,6 +486,7 @@ export class Game {
     }
     this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.25);   // respiro: +25% de vida
     this.iframes = Math.max(this.iframes, 2);
+    this.startIntro(RUN.warpIntro);
   }
 
   // ---------------- Chefões ----------------
@@ -849,7 +861,9 @@ const SETTINGS_KEY = 'nekog.settings.v1';
 function loadSettings() {
   let s = null;
   try { s = JSON.parse(localStorage.getItem(SETTINGS_KEY)); } catch { s = null; }
-  return { shake: true, numbers: true, perf: false, auto: true, vib: true, size: 1, alpha: 1, lefty: false, ...(s || {}) };
+  const out = { shake: true, numbers: true, perf: false, auto: false, vib: true, size: 1, alpha: 1, lefty: false, ...(s || {}) };
+  if ((out.v || 1) < 2) { out.auto = false; out.v = 2; }   // v0.22: ataque manual por padrão (automático vira opção)
+  return out;
 }
 function saveSettings(s) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch { /* sem armazenamento */ } }
 

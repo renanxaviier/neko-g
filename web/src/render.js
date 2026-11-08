@@ -460,12 +460,20 @@ export class Renderer {
     return [ok, total];
   }
 
+  // Cenário pronto para jogar sem engasgo: núcleo, chefões, folhas e texturas do bioma
+  sceneReady(bid) {
+    if (!this.atlas || !this._sheet('boss') || !this._bioReady(bid)) return false;
+    return !BIOME_ART[bid] || (!!this.bioTex[bid] && !!this._near(bid));
+  }
+
   warmGpu() {
     const x = this.ctx;
+    const ok = (o) => o && (o instanceof HTMLCanvasElement || o instanceof HTMLImageElement || (window.ImageBitmap && o instanceof ImageBitmap) || (window.OffscreenCanvas && o instanceof OffscreenCanvas));
+    const draw = (o) => { if (ok(o) && o.width) try { x.drawImage(o, 0, 0, 1, 1, 0, 0, 1, 1); } catch { /* imagem liberada */ } };
     x.save(); x.globalAlpha = 0.01;
-    for (const S of Object.values(this.sheets)) if (S.img) x.drawImage(S.img, 0, 0, 2, 2, 0, 0, 1, 1);
-    for (const n of Object.values(this.bioNear)) if (n.ready) x.drawImage(n.ready, 0, 0, 2, 2, 0, 0, 1, 1);
-    for (const t of Object.values(this.bioTex)) for (const c of Object.values(t)) x.drawImage(c, 0, 0, 1, 1, 0, 0, 1, 1);
+    for (const S of Object.values(this.sheets)) draw(S.img);
+    for (const n of Object.values(this.bioNear)) draw(n.ready);
+    for (const t of Object.values(this.bioTex)) for (const c of Object.values(t)) draw(c);
     x.restore();
   }
 
