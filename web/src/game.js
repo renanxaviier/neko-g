@@ -93,6 +93,7 @@ export class Game {
     this.hasRevived = false; this.usedRevive = false; this.isDying = false; this.dyingT = 0; this.deathAnim = 0;
     this.batteries = 0; this.elitesKilled = 0; this.mod = {};
     this.map = null; this.stageInfo = null; this.stage = 0;
+    this.expedition = 1; this.adaptEx = 0; this.adaptHp = 1; this.adaptAlive = 1;
     this.iframes = 0; this.hurtFlash = 0; this.hitStop = 0;
     this.reviveT = 0; this.adPlaying = false; this.adT = 0;
     this.camera.snap(this.player);
@@ -338,6 +339,7 @@ export class Game {
   _journeyStep(dt) {
     const st = this.stageInfo;
     if (this.mapDoneT > 0) { if ((this.mapDoneT -= dt) <= 0) this._journeyWin(); return; }
+    this._adapt();
     if (!st || this.stageDone || st.type === 'boss' || st.type === 'reach') return;
     if (st.type === 'elite' && (this.eliteT -= dt) <= 0) {      // um elite por vez; o próximo vem alguns segundos depois
       this.eliteT = 1;
@@ -354,6 +356,41 @@ export class Game {
   }
 
   // Mapa vencido: bônus de Sucata (e Cyber-Moedas na 1ª vez) e libera o próximo
+  // Dificuldade proporcional à força (Jornada): excesso de nível sobre quem começou o mapa do zero
+  _adapt() {
+    const A = JOURNEY.adapt, M = this.mod || {};
+    const expected = 1 + A.perStage * (this.stage + Math.min(1, this.stageFrac()));
+    const ex = this.adaptEx = Math.max(0, Math.min(A.cap, this.level - expected));
+    this.adaptHp = 1 + A.hp * ex;
+    this.adaptAlive = Math.min(A.aliveMax, 1 + A.alive * ex);
+    const n = this.map.n + this.stage * JOURNEY.stageDiff;
+    this.enemyDamageMult = (1 + 0.04 * n) * (M.dmg || 1) * (1 + A.dmg * ex);
+  }
+
+  // Expedição: depois de vencer um mapa, segue para o próximo com o mesmo nível, skills e vida (+35%).
+  // O que já foi guardado no fim do mapa (Sucata, abates, tempo, XP do personagem) começa a contar de novo.
+  continueJourney() {
+    const r = this.lastResult;
+    if (this.mode !== 'journey' || !r || !r.victory || this.state !== GS.GameOver) return false;
+    this.kills = 0; this.runTime = 0; this.scrap = 0; this.batteries = 0; this.elitesKilled = 0;
+    this.runStats = { tanks: 0, crates: 0, evos: 0, bosses: 0, biomes: new Set() };
+    this.usedRevive = false;                           // estrela "sem revive" é por mapa (o revive continua 1 por expedição)
+    this.expedition = (this.expedition || 1) + 1;
+    this.enemies.reset(); this.pickups.reset(); this.fx.reset(); this.juice.reset();
+    this.boss = null; this.portal = null; this.isDying = false;
+    this.warps = (this.warps || 0) + 1;
+    this.world = new World((this.seed ^ Math.imul(this.warps + 1, 0x9e3779b1)) >>> 0);
+    this.player.world = this.world;
+    this.player.reset(12 * TILE, -2 * TILE);
+    this.camera.snap(this.player);
+    this.spawner.timer = 2.5; this.spawner.warned = false;
+    this._enterMap(this.map.n + 1);
+    this.hp = Math.min(this.maxHp, this.hp + this.maxHp * JOURNEY.continueHeal);
+    this.iframes = 2;
+    this.setState(GS.Playing);
+    return true;
+  }
+
   _journeyWin() {
     const m = this.map.n, k = this.mapReplay ? JOURNEY.replayMult : 1;
     const bonusScrap = Math.round((JOURNEY.clearScrap.base + JOURNEY.clearScrap.perMap * m) * k);
@@ -778,7 +815,7 @@ export class Game {
     if (journey) {
       Object.assign(result, { map: this.map.num, mapIdx: this.map.n, stage: this.stage + 1, stages: this.map.stages.length, replay: this.mapReplay,
         bonusScrap: opt.bonusScrap || 0, bonusCoins: opt.bonusCoins || 0, stars: opt.stars || 0, newStars: opt.newStars || 0,
-        starCoins: opt.starCoins || 0, allStars: (this.meta.jStars || {})[this.map.n] || 0, mod: this.map.mod });
+        starCoins: opt.starCoins || 0, allStars: (this.meta.jStars || {})[this.map.n] || 0, mod: this.map.mod, expedition: this.expedition, carry: this.level });
       result.next = opt.victory ? { mode: 'journey', map: this.map.n + 1 } : { mode: 'journey', map: this.map.n };
     } else result.next = { mode: 'endless' };
     result.sector = this.sector + 1; result.sectorName = this.sectorInfo.biome.name; result.sectorColor = this.sectorInfo.biome.color;

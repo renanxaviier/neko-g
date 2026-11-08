@@ -49,7 +49,11 @@ export class UI {
     $('tl-back').addEventListener('click', () => this.showTalents(null));
     $('tl-reset').addEventListener('click', () => { if (this.game.resetTalents(this._tlId)) this._renderTalents(); });
     $('btn-maps-back').addEventListener('click', () => this.showMaps(false));
-    this.el.restart.addEventListener('click', () => this.h.start((game.lastResult && game.lastResult.next) || { mode: 'endless' }));
+    this.el.restart.addEventListener('click', () => {
+      const r = game.lastResult;
+      if (r && r.mode === 'journey' && r.victory && game.continueJourney()) return;   // expedição: segue com o mesmo nível e skills
+      this.h.start((r && r.next) || { mode: 'endless' });
+    });
     $('btn-menu').addEventListener('click', () => game.toTitle());
     $('btn-hideout').addEventListener('click', () => this.showHideout(true));
     $('btn-over-hideout').addEventListener('click', () => { game.toTitle(); this.showHideout(true); });
@@ -855,7 +859,8 @@ export class UI {
 
   // Início de cada fase da Jornada: anúncio com o objetivo
   showStage(map, s, st, last) {
-    const tag = last ? `MAPA ${map.num} · CHEFE` : `MAPA ${map.num} · FASE ${s + 1}/${map.stages.length - 1}`;
+    let tag = last ? `MAPA ${map.num} · CHEFE` : `MAPA ${map.num} · FASE ${s + 1}/${map.stages.length - 1}`;
+    if (s === 0 && this.game.expedition > 1) tag += ` · EXPEDIÇÃO ${this.game.expedition}`;
     this.showBiome({ name: s === 0 ? map.biome.name : (last ? 'CHEFE' : `FASE ${s + 1}`), color: map.biome.color }, s === 0 ? `${tag} · ${goalIntro(st)}` : goalIntro(st));
     if (s === 0 && map.mod) {                           // modificador do mapa: aviso logo depois do nome
       clearTimeout(this._modT);
@@ -966,11 +971,12 @@ export class UI {
   _showOver() {
     const r = this.game.lastResult;
     $('over-title').textContent = r.mode === 'journey' ? (r.victory ? 'MAPA CONCLUÍDO!' : 'MAPA FALHOU') : 'FIM DE JOGO';
-    this.el.restart.textContent = r.mode === 'journey' ? (r.victory ? `▶ Próximo mapa (${r.map + 1})` : '↻ Tentar de novo') : '↻ Jogar de novo';
+    this.el.restart.textContent = r.mode === 'journey' ? (r.victory ? `▶ Seguir para o mapa ${r.map + 1} · mantém Nv ${r.carry}` : '↻ Tentar de novo') : '↻ Jogar de novo';
     if (r.mode === 'journey') {
       const bonus = r.victory ? `<div class="lbl">Bônus do mapa: <b class="rec">+⚙ ${r.bonusScrap}</b>${r.bonusCoins ? ` · <b class="rec">+◆ ${r.bonusCoins}</b>` : ''}${r.replay ? ' · mapa repetido (metade)' : ''}</div>` : '';
       const st = r.victory ? `<div class="over-stars">${[1, 2, 4].map((b, i) => `<span class="${r.stars & b ? 'on' : ''}${r.newStars & b ? ' new' : ''}" style="animation-delay:${0.25 + i * 0.3}s"><i>★</i><small>${['Vencer', 'Sem revive', 'Vida ≥ 50%'][i]}</small></span>`).join('')}</div>${r.starCoins ? `<div class="lbl">Estrelas novas: <b class="rec">+◆ ${r.starCoins}</b></div>` : ''}` : '';
-      const mod = r.mod ? `<div class="lbl">${r.mod.icon} Modificador: <b>${r.mod.name}</b></div>` : '';
+      const mod = (r.mod ? `<div class="lbl">${r.mod.icon} Modificador: <b>${r.mod.name}</b></div>` : '') +
+        (r.victory ? `<div class="lbl exp-note">Expedição: siga com nível, skills e vida (+35%). Os inimigos acompanham a sua força.${r.expedition > 1 ? ` <b>${r.expedition} mapas seguidos!</b>` : ''}</div>` : '');
       this.el.overStats.innerHTML = `
       <div class="big" style="text-shadow: 0 0 12px ${r.sectorColor}">MAPA ${r.map}</div>
       <div class="lbl"><b style="color:${r.sectorColor}">${r.sectorName}</b> · ${r.victory ? 'chefe derrotado' : `parou na ${r.stage > r.stages - 1 ? 'luta com o chefe' : `fase ${r.stage}/${r.stages - 1}`}`}</div>

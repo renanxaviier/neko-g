@@ -2,7 +2,7 @@
 // Unidades: pixels de mundo e segundos. 1 tile = 32 px.
 
 export const TILE = 32;
-export const VERSION = '0.19 teste';   // aparece na tela inicial e no feedback dos testadores
+export const VERSION = '0.20 teste';   // aparece na tela inicial e no feedback dos testadores
 export const VIEW_W = 410;          // largura visível do mundo (retrato; era 380 até a v0.17); a altura se adapta à tela
 export const CHUNK_W = 24;          // largura de um chunk em tiles
 export const CHUNK_H = 16;          // altura de um chunk em tiles (abaixo disso é chão sólido)
@@ -64,6 +64,11 @@ export const JOURNEY = {
     furia:     { icon: '🔥', name: 'FÚRIA',      desc: 'Inimigos +40% dano · +30% XP',            dmg: 1.4, xp: 1.3 },
     sobrecarga:{ icon: '⚡', name: 'SOBRECARGA', desc: 'Suas skills recarregam 20% mais rápido · inimigos +20% vida', cd: 0.8, hp: 1.2 },
   },
+  // v0.20 Expedição: ao vencer um mapa, dá para seguir para o próximo mantendo nível, skills e vida.
+  // Dificuldade proporcional à força: compara o nível do jogador com o nível esperado de quem começou o mapa
+  // do zero (1 + perStage × fases andadas) e reforça os inimigos pelo excesso (sem enfraquecer o personagem).
+  continueHeal: 0.35,          // vida recuperada ao seguir para o próximo mapa
+  adapt: { perStage: 3.5, cap: 24, hp: 0.06, dmg: 0.025, alive: 0.015, aliveMax: 1.35, boss: 0.04 },
   // Estrelas do mapa: vencer · sem usar o revive · terminar com ≥ starHp de vida. Cada estrela nova dá Cyber-Moedas.
   starHp: 0.5,
   starCoins: 2,

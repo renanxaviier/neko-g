@@ -779,7 +779,7 @@ export class Spawner {
     if (this.timer > 0) return;
     const M = g.mod || {};                                                     // modificador do mapa (Jornada)
     this.timer = Math.max(0.55, 2.6 - 0.11 * L.n - 1.1 * L.p) * (M.rate || 1);  // setor 1: 2,6 s → 1,5 s
-    const alive = Math.min(80, Math.round((6 + 2.2 * L.n + L.p * (8 + 1.4 * L.n)) * (M.alive || 1)));   // setor 1: 6 → 14 · setor 6: 17 → 32
+    const alive = Math.min(80, Math.round((6 + 2.2 * L.n + L.p * (8 + 1.4 * L.n)) * (M.alive || 1) * (g.mode === 'journey' ? g.adaptAlive || 1 : 1)));   // setor 1: 6 → 14 · setor 6: 17 → 32
     if (g.enemies.count >= alive * (g.boss ? 0.5 : 1)) return;                // com chefe em campo, metade da horda
     this._spawnGroup(L);
   }
@@ -823,7 +823,7 @@ export class Spawner {
     if (g.sectorTime < g.sectorBossAt || (this.bossRetry -= dt) > 0) return;
     const cycle = Math.floor(this.bossIdx / BOSS_ORDER.length);
     const hpMult = g.mode === 'journey' && g.map
-      ? (1 + JOURNEY.bossHpPerMap * g.map.n) * (1 + JOURNEY.bossHpPerCycle * g.map.cycle)
+      ? (1 + JOURNEY.bossHpPerMap * g.map.n) * (1 + JOURNEY.bossHpPerCycle * g.map.cycle) * (1 + JOURNEY.adapt.boss * (g.adaptEx || 0))
       : (1 + 0.04 * (g.runTime / 60)) * (1 + 0.75 * cycle);
     const e = this._spawnBoss(id, hpMult);
     if (!e) { this.bossRetry = 0.5; return; }
@@ -875,7 +875,7 @@ export class Spawner {
     const ahead = p.input.moveDir || (rng.chance(0.5) ? 1 : -1);
     const side = rng.chance(0.6) ? ahead : -ahead;
     const fromTop = def.flying && rng.chance(0.3);
-    const hpMult = (1 + 0.1 * L.n) * (1 + 0.3 * L.p) * (1 + 0.6 * L.cyc) * ((g.mod && g.mod.hp) || 1);   // sobe com o setor e ao longo dele
+    const hpMult = (1 + 0.1 * L.n) * (1 + 0.3 * L.p) * (1 + 0.6 * L.cyc) * ((g.mod && g.mod.hp) || 1) * (g.mode === 'journey' ? g.adaptHp || 1 : 1);   // sobe com o setor e ao longo dele (+ força do jogador na Jornada)
 
     for (let i = 0; i < n; i++) {
       const off = 40 + i * 28 + rng.range(0, 30);

@@ -180,6 +180,12 @@ Entram na rotação de chefões depois do T-Rex (`BOSS_ORDER`). Ataques feitos p
 - **3 estrelas por mapa:** vencer · sem usar o revive · terminar com ≥ 50% de vida. Cada estrela conquistada pela 1ª vez dá ◆ 2 (também ao repetir o mapa). Salvas em `meta.jStars`.
 - **Mapa da Jornada** (botão 🗺 MAPAS): caminho subindo com um nó por mapa (cor do cenário, número, estrelas, ícone do modificador), o próximo pulsando, 2 mapas bloqueados de prévia e o marco de cada novo ciclo. Tocar num nó mostra as fases, o chefe, o modificador e o botão Jogar.
 
+#### 3.5d Expedição e dificuldade proporcional à força (v0.20) [PROPOSTA]
+- **Problema:** cada mapa da Jornada era uma partida nova; ao passar de mapa o nível e as skills zeravam e dava sensação de não avançar.
+- **Expedição:** ao vencer um mapa, o botão "▶ Seguir para o mapa N · mantém Nv X" continua a **mesma partida**: nível, skills, armas e vida (+35%). As recompensas do mapa (Sucata, estrelas, XP do personagem, missões) são guardadas na hora; os contadores de abates/tempo/Sucata recomeçam no mapa novo. O revive continua 1 por expedição; a estrela "sem revive" é por mapa. Morreu: a expedição termina e "Tentar de novo" recomeça aquele mapa do zero.
+- **Dificuldade proporcional:** nível esperado de quem começou o mapa do zero = 1 + 3,5 × fases andadas (medido com o bot). O excesso do jogador (até 24 níveis) reforça os inimigos: vida +6% por nível, dano +2,5%, quantidade +1,5% (máx. +35%), vida do chefe +4%. Conforme o mapa avança o esperado sobe e o reforço diminui. O personagem nunca é enfraquecido. Valores em `JOURNEY.adapt` (config.js).
+- O Infinito já mantinha tudo entre setores e não mudou.
+
 #### 3.5c Etapa 2: nível do personagem e talentos (v0.16) [PROPOSTA]
 - Cada personagem tem **XP permanente** (`meta.cxp`), ganho ao fim de **toda** partida (Infinito ou Jornada): 1 por abate + 0,5 por segundo + 25 por fase/setor vencido + 150 por mapa vencido. Nível máximo 30; para passar do nível L: 220 + 110 × (L − 1). Valores em `web/src/talents.js` (`CHAR_LEVEL`).
 - Cada nível = **1 ponto de talento** daquele personagem. Árvore igual para todos, com 3 ramos de 4 talentos; o último de cada ramo pede 6 pontos gastos no ramo. Redistribuir é grátis.

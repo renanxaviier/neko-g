@@ -9,6 +9,8 @@ import { pointsLeft } from './talents.js';
 
 // Novidades da versão atual (aparece uma vez por versão)
 export const CHANGELOG = [
+  'Expedição na Jornada: ao vencer um mapa, siga para o próximo com nível, skills e vida',
+  'Inimigos acompanham a sua força (sem enfraquecer o personagem)',
   'Sino de notificações: nada mais abre sozinho ao entrar',
   'Ataque automático e opções de botões (tamanho, transparência, canhoto)',
   'Câmera mais aberta, tutorial e botão de Feedback',
