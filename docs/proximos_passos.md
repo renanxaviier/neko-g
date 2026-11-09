@@ -1,7 +1,7 @@
-# Estado do projeto e próximos passos (atualizado em 08/11/2026, 19h — pausa para economizar créditos)
+# Estado do projeto e próximos passos (atualizado em 08/11/2026, 22h)
 
 ## Onde paramos
-- **Versão:** v0.25 teste (build 23 do GitHub Actions). Tudo está no repositório **github.com/renanxaviier/neko-g** (branch `main`).
+- **Versão:** v0.26 teste. Tudo está no repositório **github.com/renanxaviier/neko-g** (branch `main`).
 - **Protótipo no Claude:** artifact "Neko G — protótipo (dev)", slug `6d96f83e-1a43-42a6-aceb-e34735bd4a27`, versão **1794174737-a474** (usar como `base_version` no próximo envio).
 - **Site/wiki:** artifact "Neko G — Wiki", slug `95b9084e-ea7b-49a5-b1d4-7356d2752b9e`. Código em `site/`. Scripts que geram as imagens e o HTML: `tools/wiki/` (`gen_site.py` tem os dados escritos à mão).
 - **Ponto de volta (rollback):** branch `versao-0.17.2`.
@@ -16,7 +16,16 @@
 - **v0.25:** modo história (13 capítulos, `web/src/story.js`, roteiro em `docs/roteiro.md`, história aprovada em `docs/historia.md`); arma exclusiva virou **ataque especial com barra de MP** (`WEAPONS.special`, botão ESPECIAL, dano ×3,2); armas do Coelho (Lâmina Meia-Lua), Macaco (Plasma de Dados) e Tatu (Ondas de Choque).
 - **Propostas escritas:** PvP em salas estilo Grand Chase (`docs/pvp.md`, [PROPOSTA]); agente `web-wiki` em `.claude/agents/`.
 
+## Feito depois da pausa (08/11, noite) — v0.26
+- Anúncio do revive: o jogo só volta quando o anúncio é fechado (corrigido e confirmado pelo produtor).
+- Conta → **Excluir conta e dados** (exigência da Play Store).
+- E-mail do produtor no grupo **testadores** do App Distribution.
+- AdMob → Privacidade e mensagens: aviso de consentimento "Neko G - consentimento (UE/Reino Unido)" **salvo como rascunho** (Não consentir ligado, inglês + português). Falta o link da política para publicar.
+- **GitHub Pages ligado:** wiki pública em https://renanxaviier.github.io/neko-g/ (workflow `.github/workflows/pages.yml`, publica a pasta `site/`).
+- Política de Privacidade escrita (PT/EN) em `site/privacidade.html`, com a seção `#excluir`. Tem o marcador `{{CONTATO}}`; o workflow **não publica** a página enquanto o marcador existir.
+
 ## Aguardando o produtor
+- **Criar o e-mail de contato da RX Games** (ex.: contato.rxgames@gmail.com) e mandar só o endereço. Depois: trocar `{{CONTATO}}` em `site/privacidade.html` (4 lugares em PT e EN), subir, colocar `https://renanxaviier.github.io/neko-g/privacidade.html` no app em AdMob → Privacidade e mensagens → Regulamentações europeias → mensagem rascunho → Selecionar apps → URL da Política de Privacidade, e **Publicar** a mensagem.
 - Adicionar e-mails ao grupo **testadores** (Firebase → App Distribution) e instalar uma vez pelo convite; confirmar se o aviso "Nova versão" aparece no celular.
 - Completar o **perfil de pagamentos** no AdMob (sem isso o app não entra em revisão).
 - Revisar o roteiro (`docs/roteiro.md`) e jogar a v0.25: dificuldade dos mapas, valor do especial (MP e dano).
