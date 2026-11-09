@@ -51,15 +51,28 @@ export async function showRewarded() {
   if (!adReady) await loadRewarded();
   if (!adReady) return false;
   adReady = false;
-  try {
-    const reward = await admob.showRewardVideoAd();
-    return !!reward;
-  } catch (e) {
-    console.warn('[ads] falha ao mostrar', e);
-    return false;
-  } finally {
-    setTimeout(loadRewarded, 1500);                // já deixa o próximo carregado
-  }
+  // O plugin resolve showRewardVideoAd() assim que a recompensa é ganha, com o anúncio AINDA na tela.
+  // Por isso o jogo só volta quando o anúncio é FECHADO (evento Dismissed), ou se ele falhar ao abrir.
+  const got = await new Promise((resolve) => {
+    let rewarded = false, done = false;
+    const handles = [];
+    const finish = () => {
+      if (done) return;
+      done = true;
+      handles.forEach((h) => { try { h.remove(); } catch { /* já removido */ } });
+      resolve(rewarded);
+    };
+    const on = (ev, fn) => { try { admob.addListener(ev, fn).then((h) => (done ? h.remove() : handles.push(h))); } catch { /* sem eventos */ } };
+    on('onRewardedVideoAdReward', () => { rewarded = true; });
+    on('onRewardedVideoAdDismissed', finish);
+    on('onRewardedVideoAdFailedToShow', finish);
+    admob.showRewardVideoAd()
+      .then((r) => { if (r) rewarded = true; })
+      .catch((e) => { console.warn('[ads] falha ao mostrar', e); finish(); });
+    setTimeout(finish, 180000);                     // segurança: nunca prende o jogo para sempre
+  });
+  setTimeout(loadRewarded, 1500);                   // já deixa o próximo carregado
+  return got;
 }
 
 export const nativeAds = () => !!admob;
