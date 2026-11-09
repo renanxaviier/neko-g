@@ -453,6 +453,7 @@
   .gbtn b { display: inline-block; width: 22px; height: 22px; line-height: 22px; border-radius: 50%; background: #fff; color: #4285f4; margin-right: 6px; font-size: 15px; }
   .or { font-size: 12px; opacity: .6; text-align: center; }
   .link { pointer-events: auto; background: none; border: 0; color: var(--cyan); text-decoration: underline; font-size: 13px; padding: 4px; }
+  .link.danger { color: #ff6b81; margin-top: 10px; }
   .acct-msg { min-height: 18px; font-size: 13px; color: #ffb3c4; }
   .acct-msg.ok { color: #4dffa6; }
   .confirm { border: 1px solid #ff3b5c; border-radius: 12px; padding: 10px; background: rgba(40,6,16,.9); font-size: 13px; }
@@ -758,6 +759,7 @@
       </div>
       <div id="acct-user" class="hidden">
         <button id="btn-signout" class="btn ghost">Sair da conta</button>
+        <button id="btn-delete-acct" class="link danger">Excluir conta e dados</button>
       </div>
       <div class="acct-msg" id="acct-msg"></div>
       <div class="confirm hidden" id="acct-confirm">

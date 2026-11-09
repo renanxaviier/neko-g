@@ -180,6 +180,12 @@ export class UI {
       const ok = await this._confirm('Seu progresso continua guardado na conta. Este aparelho volta a jogar como um convidado novo (do zero) até você entrar de novo.');
       if (ok) this._act(() => cloud.signOut(), 'Você saiu da conta.');
     });
+    $('btn-delete-acct').addEventListener('click', async () => {
+      const ok = await this._confirm('Excluir a conta apaga para sempre seu progresso na nuvem, seu recorde no ranking e o login, e zera o progresso deste aparelho. Não dá para desfazer.');
+      if (!ok) return;
+      const ok2 = await this._confirm('Tem certeza? Toque em "Continuar" para excluir agora.');
+      if (ok2) this._act(() => cloud.deleteAccount(), 'Conta excluída. O jogo vai recomeçar do zero.');
+    });
     $('email-form').addEventListener('submit', (ev) => ev.preventDefault());
     // Painel DEV (conta master)
     $('btn-dev').addEventListener('click', () => this.showDev(true));

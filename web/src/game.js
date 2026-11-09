@@ -844,6 +844,13 @@ export class Game {
   }
 
   saveMeta() { saveGame(this.meta); }
+  // Conta excluída: apaga o save deste aparelho e recarrega o jogo do zero
+  wipeLocal() {
+    try { localStorage.removeItem(SAVE_KEY); } catch { /* sem armazenamento */ }
+    this.meta = buildMeta(null);
+    saveGame(this.meta);
+    setTimeout(() => location.reload(), 600);
+  }
 
   // Vibração curta (Android); desligável nas opções
   vibe(ms) {

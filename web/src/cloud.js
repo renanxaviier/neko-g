@@ -16,6 +16,8 @@ const SAVE_DEBOUNCE = 2500;
 const NICK_RE = /^[A-Za-z0-9À-ÿ_\- ]{3,16}$/;
 
 export const AUTH_ERRORS = {
+  'demo-master': 'A conta master da demonstração não pode ser excluída.',
+  'recent-login': 'Por segurança, saia da conta, entre de novo e toque em "Excluir conta" logo em seguida.',
   'auth/invalid-email': 'E-mail inválido.',
   'auth/missing-email': 'Digite o e-mail.',
   'auth/missing-password': 'Digite a senha.',
@@ -113,6 +115,18 @@ class FirebaseBackend {
     const C = window.Capacitor, FA = C && C.Plugins && C.Plugins.FirebaseAuthentication;
     if (FA && C.isNativePlatform && C.isNativePlatform()) { try { await FA.signOut(); } catch { /* ok */ } }
     await this.A.signOut(this.auth);                 // onAuthStateChanged(null) cria um novo convidado
+  }
+
+  // Excluir conta (exigência da Google Play): apaga o progresso (players/{uid}), a linha do ranking (leaderboard/{uid})
+  // e o login. Se o login for antigo, o Firebase pede para entrar de novo antes (código recent-login).
+  async deleteAccount() {
+    const A = this.A, F = this.F, u = this.auth.currentUser;
+    if (!u) return;
+    await Promise.all([F.deleteDoc(F.doc(this.db, 'leaderboard', u.uid)).catch(() => {}), F.deleteDoc(F.doc(this.db, 'players', u.uid)).catch(() => {})]);
+    try { await A.deleteUser(u); }
+    catch (e) { if (e.code === 'auth/requires-recent-login') throw { code: 'recent-login' }; throw e; }
+    const C = window.Capacitor, FA = C && C.Plugins && C.Plugins.FirebaseAuthentication;
+    if (FA && C.isNativePlatform && C.isNativePlatform()) { try { await FA.signOut(); } catch { /* ok */ } }
   }
 
   // Conta de desenvolvedor: existe o documento admins/{uid} (criado à mão no Console; ninguém escreve pelo app)
@@ -246,6 +260,16 @@ class DemoBackend {
   async savePlayer(uid, data) { await wait(60); const d = this._load(); d.players[uid] = data; this._save(d); }
   async getScore(uid) { return this._load().board[uid] || null; }
   async putScore(uid, e) { const d = this._load(); d.board[uid] = e; this._save(d); }
+  async deleteAccount() {
+    await wait(300);
+    const d = this._load(), uid = d.session, a = d.accounts[uid];
+    if (uid === DEMO_MASTER.uid) throw { code: 'demo-master' };
+    if (a && a.email) delete d.emails[a.email];
+    if (d.google === uid) d.google = null;
+    delete d.accounts[uid]; delete d.players[uid]; delete d.board[uid];
+    this._newGuest(d); this._save(d);
+  }
+
   async top(n) {
     await wait(200);
     const b = this._load().board;
@@ -396,6 +420,11 @@ export class Cloud {
   }
   reset(email) { return this.backend.reset((email || '').trim()); }
   async signOut() { await this.flush().catch(() => {}); return this.backend.signOut(); }
+  // Excluir conta: apaga na nuvem e zera o progresso deste aparelho (o jogo recomeça como convidado novo)
+  async deleteAccount() {
+    await this.backend.deleteAccount();
+    this.game.wipeLocal();
+  }
 
   label() {
     if (this.mode === 'offline') return 'OFFLINE';
